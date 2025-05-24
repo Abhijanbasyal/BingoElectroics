@@ -20,6 +20,8 @@ export const register = async (req, res, next) => {
     // Validate input
     validateRegistration({ username, email, password });
 
+    
+
     // Check password strength
     const passwordCheck = validatePasswordStrength(password);
     if (!passwordCheck.isValid) {
