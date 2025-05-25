@@ -1,0 +1,120 @@
+admin::
+admin
+admin@gmail.com
+Admin@123
+
+
+
+Features
+
+Kanban
+
+loading fearture
+
+
+AI recommendation neural network product recommendation
+Product Category
+Search funcrtionality with filer and recommendation
+Payment gateway Khalti
+Purchase garyo bhaney customer ley 1 points banauney
+POints can be used for discounts voucher or exclusive offers
+User behavior (Jati badi kinxa teti badxa teti engange ani yehi nai user behavior ma ganinxa) more than 500 points xa bhani diney
+Review and rating systems for product and sellers(i.e. Customer and Sellers and Admin and Manager)
+Customer service support (Contact us Page) 
+Dashboard tracking
+Products details page description, image, price, loyalty points(kinyo bhaney katti aauxa)
+cart system
+Notification System (reward updates, offers, and cart reminders)
+Security hased user credentials, transaction , by using hash that is bcrypt or HTTPS
+tier system according to the credits (Bronze, Silver, Gold)
+
+
+Flow ====
+
+CRUD operation
+back-end = serverfiles
+           routes
+	   controllers
+           models
+
+Folder structure
+api
+client
+.env (back-end env)
+
+
+=> Recommendation ai neural network
+=> Tools using =>  ReduxToolkit stategement (instead of using context), Cloudinary for image, Bcrypt for hashing password and mainting security, Khalti Api for payment
+
+
+
+=> Usersschema						
+
+username
+email
+password
+roles: Customer, Sellers, Manager, Admin
+points: 
+pointsrank: reference from pointsrank schema
+
+
+=> pointsrank schema (Manager/admin)
+Title
+image
+pointsNumber
+created:reference from userschema
+modified: reference from userschema
+
+
+
+=> CategorySchema : Manager/Admin()
+Name: 
+created by reference from userschema
+modified by reference from userschema
+
+
+
+=> ProductsSchema (Manger/Admin/Seller)
+title
+description
+image
+price
+loyaltyPoints
+produt quantity
+reviews: customerReviews 
+category: reference from catrgorySchema (dropdown section hunxa)
+createdBY
+ModifiedBy
+
+=> CustomerReviewsSchema
+rating
+reviews
+UserId: 
+
+
+=> ContactUsSchema
+title
+description
+userId: reference from userschema
+
+=> NotificationSchema
+description 
+userId : userSchema reference  (using State management redux toolkit)
+
+=> CartSchema:
+Products:
+quantity;
+
+
+
+
+
+
+
+
+
+
+
+
+
+

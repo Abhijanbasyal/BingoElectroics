@@ -88,7 +88,7 @@ export const login = async (req, res, next) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000,
+        // maxAge: 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json({
@@ -330,6 +330,21 @@ export const restoreAllUsers = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: `Restored ${result.modifiedCount} users`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return next(errorHandler(404, 'User not found'));
+
+    res.status(200).json({
+      success: true,
+      user,
     });
   } catch (error) {
     next(error);

@@ -11,15 +11,18 @@ import {
     restoreUser,
     getDeletedUsers,
     deleteAllUsersPermanently,
-    restoreAllUsers
+    restoreAllUsers,
+    getCurrentUser
 } from '../controllers/authController.js';
 import { verifyToken, verifyRole } from '../utils/verifyToken.js';
 
 const router = express.Router();
 
+router.get('/current-user', verifyToken, getCurrentUser);
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+
 
 // Protected routes
 router.post('/logout', verifyToken, logout);
