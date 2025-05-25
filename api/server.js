@@ -5,9 +5,11 @@ dotenv.config();
 
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './utils/error.js';
 import connectDB from './db/dbConnection.js';
+import authRoutes from './routes/authRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 
 
 const app = express();
@@ -22,6 +24,9 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/products', productRoutes);
+
 
 // Test route
 app.get('/api/test', (req, res) => {

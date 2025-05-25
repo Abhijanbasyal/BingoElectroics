@@ -4,6 +4,21 @@ admin@gmail.com
 Admin@123
 
 
+Steps:
+login/signup ------------------> done -------------------> GUI LEft
+Category ---------------------->                          (note: in category we cannot delete category if there
+                                                                 is some product related to that category, so if 
+                                                                 wanted to delete we need to edit that product and 
+                                                                 change the category first)
+Product------------------------>
+Cart--------------------------->
+CustomerReviews---------------->
+Contact Us--------------------->
+Notification------------------->
+Rank--------------------------->
+
+
+
 
 Features
 

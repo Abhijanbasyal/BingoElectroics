@@ -14,6 +14,7 @@ export const verifyToken = (req, res, next) => {
             return next(errorHandler(403, 'Forbidden'));
         }
         req.user = user;
+        // console.log(req.user);
         next();
     });
 };
@@ -21,6 +22,7 @@ export const verifyToken = (req, res, next) => {
 export const verifyRole = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.roles)) {
+            // console.log(req.user)
             return next(errorHandler(403, 'You are not authorized to perform this action'));
         }
         next();
