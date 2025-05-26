@@ -17,14 +17,14 @@ const router = express.Router();
 
 // Protected routes (Manager/Admin only)
 router.post("/", verifyToken, createCategory); //verifyRole(['Manager', 'Admin'])  --back-end logic for handling roles 
-router.get("/", verifyToken, getAllCategories); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.get("/deleted", verifyToken, getDeletedCategories); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.get("/:id", verifyToken, getCategoryById); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.put("/:id", verifyToken, updateCategory); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.delete("/:id", verifyToken, deleteCategory); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.delete("/:id/permanent", verifyToken, deleteCategoryPermanently); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.delete("/delete/all", verifyToken, deleteAllCategoriesPermanently); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.put("/:id/restore", verifyToken, restoreCategory); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
-router.put("/restore/all", verifyToken, restoreAllCategories); //verifyRole(['Manager', 'Admin']) --back-end logic for handling roles 
+router.get("/", verifyToken, getAllCategories); 
+router.get("/deleted", verifyToken, getDeletedCategories); 
+router.get("/:id", verifyToken, getCategoryById); 
+router.put("/:id", verifyToken, updateCategory); 
+router.delete("/:id", verifyToken, deleteCategory); 
+router.delete("/:id/permanent", verifyToken, deleteCategoryPermanently); 
+router.delete("/delete/all", verifyToken, deleteAllCategoriesPermanently); 
+router.put("/:id/restore", verifyToken, restoreCategory); 
+router.put("/restore/all", verifyToken, restoreAllCategories); 
 
 export default router;

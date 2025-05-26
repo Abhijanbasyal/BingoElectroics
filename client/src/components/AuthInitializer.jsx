@@ -7,6 +7,7 @@ const AuthInitializer = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    console.log('Dispatching fetchCurrentUser');
     dispatch(fetchCurrentUser());
   }, [dispatch]);
 

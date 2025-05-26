@@ -1,9 +1,9 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import APIEndPoints from '../middleware/APIEndPoints';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import APIEndPoints from "../middleware/APIEndPoints";
 
 export const loginUser = createAsyncThunk(
-  'auth/loginUser',
+  "auth/loginUser",
   async ({ username, password }, { rejectWithValue }) => {
     try {
       const response = await axios({
@@ -19,14 +19,13 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-
 export const fetchCurrentUser = createAsyncThunk(
-  'auth/fetchCurrentUser',
+  "auth/fetchCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios({
-        method: 'GET',
-        url: APIEndPoints.currentUser.url, 
+        method: "GET",
+        url: APIEndPoints.currentUser.url,
         withCredentials: true,
       });
       return response.data.user;
@@ -36,9 +35,8 @@ export const fetchCurrentUser = createAsyncThunk(
   }
 );
 
-
 export const signupUser = createAsyncThunk(
-  'auth/signupUser',
+  "auth/signupUser",
   async ({ username, email, password, roles }, { rejectWithValue }) => {
     try {
       const response = await axios({
@@ -55,7 +53,7 @@ export const signupUser = createAsyncThunk(
 );
 
 export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
+  "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios({
@@ -71,10 +69,11 @@ export const logoutUser = createAsyncThunk(
 );
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState: {
     user: null,
     isAuthenticated: false,
+    // loadingAuthenticated: true,
     loading: false,
     error: null,
   },
@@ -98,11 +97,17 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload.message;
       })
+      // .addCase(fetchCurrentUser.pending, (state) => {
+      //   state.loadingAuthenticated = true;
+      //   state.error = null;
+      // })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        // state.loadingAuthenticated = false;
         state.user = action.payload;
         state.isAuthenticated = true;
       })
       .addCase(fetchCurrentUser.rejected, (state) => {
+        // state.loadingAuthenticated = false;
         state.user = null;
         state.isAuthenticated = false;
       })

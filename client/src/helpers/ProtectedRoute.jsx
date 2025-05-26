@@ -1,18 +1,16 @@
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+// import LoadingComponent from '../components/LoadingComponent';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, loading, loadingAuthenticated } = useSelector((state) => state.auth);
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+
+  
+  if (!user || !requiredRole.includes(user.roles)) {
+    return <Navigate to="/" />;
   }
-
-  if (requiredRole && user?.roles !== requiredRole) {
-    return <Navigate to="/not-found" replace />;
-  }
-
   return children;
 };
 
-export default ProtectedRoute;
+export default ProtectedRoute; 

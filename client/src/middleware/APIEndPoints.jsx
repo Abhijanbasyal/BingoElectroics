@@ -20,6 +20,10 @@ const APIEndPoints = {
     url: `${serverDomain}/auth/current-user`,
     method: 'get',
   },
+   Add_category: {
+    url: `${serverDomain}/categories`,
+    method: 'post',
+  },
 };
 
 export default APIEndPoints;

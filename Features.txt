@@ -17,6 +17,8 @@ Contact Us--------------------->
 Notification------------------->
 Rank--------------------------->
 
+creating one component for table where it can detect the total column present in table and directly we can use it for all
+
 
 
 
