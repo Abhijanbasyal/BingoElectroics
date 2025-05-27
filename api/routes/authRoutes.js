@@ -26,7 +26,7 @@ router.post('/login', login);
 
 // Protected routes
 router.post('/logout', verifyToken, logout);
-router.get('/users', verifyToken, verifyRole('Admin'), getAllUsers);
+router.get('/users', verifyToken,  getAllUsers); //verifyRole('Admin'),
 router.get('/users/deleted', verifyToken, verifyRole('Admin'), getDeletedUsers);
 router.get('/users/:id', verifyToken, getUserById);
 router.put('/users/:id', verifyToken, updateUser);

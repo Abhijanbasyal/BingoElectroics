@@ -2,22 +2,18 @@ import Product from "../../models/products/Product.js";
 import { errorHandler } from "../../utils/error.js";
 import dotenv from 'dotenv';
 
-
-
 dotenv.config();
 
-
-
 const pagelimitForData = process.env.DATA_FETCH_PAGE_LIMIT || 10;
-console.log(process.env.DATA_FETCH_PAGE_LIMIT)
+
 // Create a new product (Seller/Manager/Admin)
 export const createProduct = async (req, res, next) => {
     try {
-        if (!['Seller', 'Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Seller, Manager, or Admin can create products"));
-        }
+        // if (!['Seller', 'Manager', 'Admin'].includes(req.user.roles)) {
+        //     return next(errorHandler(403, "Only Seller, Manager, or Admin can create products"));
+        // }
 
-        const { title, description, image, price, loyaltyPoints, productQuantity, category } = req.body;
+        const { title, description, images, price, loyaltyPoints, productQuantity, category } = req.body;
 
         if (!title || !price || !productQuantity || !category) {
             return next(errorHandler(400, "Title, price, product quantity, and category are required"));
@@ -26,7 +22,7 @@ export const createProduct = async (req, res, next) => {
         const newProduct = new Product({
             title,
             description,
-            image,
+            images: images || [], // Expecting an array of image URLs
             price,
             loyaltyPoints,
             productQuantity,
@@ -43,6 +39,49 @@ export const createProduct = async (req, res, next) => {
             success: true,
             message: "Product created successfully",
             product: newProduct
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Update product (Seller/Manager/Admin)
+export const updateProduct = async (req, res, next) => {
+    try {
+        if (!['Seller', 'Manager', 'Admin'].includes(req.user.roles)) {
+            return next(errorHandler(403, "Only Seller, Manager, or Admin can update products"));
+        }
+
+        const { title, description, images, price, loyaltyPoints, productQuantity, category } = req.body;
+
+        const updateData = {
+            title,
+            description,
+            images: images || [], // Update with new array of image URLs
+            price,
+            loyaltyPoints,
+            productQuantity,
+            category,
+            modifiedBy: req.user.id,
+            modifiedDate: new Date()
+        };
+
+        const updatedProduct = await Product.findOneAndUpdate(
+            { _id: req.params.id, isDeleted: false },
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).populate('category', 'title')
+         .populate('createdBy', 'username')
+         .populate('modifiedBy', 'username');
+
+        if (!updatedProduct) {
+            return next(errorHandler(404, "Product not found"));
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Product updated successfully",
+            product: updatedProduct
         });
     } catch (error) {
         next(error);
@@ -100,49 +139,6 @@ export const getProductById = async (req, res, next) => {
         res.status(200).json({
             success: true,
             product
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Update product (Seller/Manager/Admin)
-export const updateProduct = async (req, res, next) => {
-    try {
-        if (!['Seller', 'Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Seller, Manager, or Admin can update products"));
-        }
-
-        const { title, description, image, price, loyaltyPoints, productQuantity, category } = req.body;
-
-        const updateData = {
-            title,
-            description,
-            image,
-            price,
-            loyaltyPoints,
-            productQuantity,
-            category,
-            modifiedBy: req.user.id,
-            modifiedDate: new Date()
-        };
-
-        const updatedProduct = await Product.findOneAndUpdate(
-            { _id: req.params.id, isDeleted: false },
-            { $set: updateData },
-            { new: true, runValidators: true }
-        ).populate('category', 'title')
-         .populate('createdBy', 'username')
-         .populate('modifiedBy', 'username');
-
-        if (!updatedProduct) {
-            return next(errorHandler(404, "Product not found"));
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Product updated successfully",
-            product: updatedProduct
         });
     } catch (error) {
         next(error);

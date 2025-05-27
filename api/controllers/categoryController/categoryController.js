@@ -1,5 +1,13 @@
 import Category from "../../models/category/Category.js";
 import { errorHandler } from "../../utils/error.js";
+import dotenv from 'dotenv';
+
+
+dotenv.config();
+
+
+
+const pagelimitForData = process.env.DATA_FETCH_PAGE_LIMIT || 10;
 
 // Create a new category (Manager/Admin only)
 export const createCategory = async (req, res, next) => {
@@ -38,17 +46,27 @@ export const createCategory = async (req, res, next) => {
 // Get all categories
 export const getAllCategories = async (req, res, next) => {
     try {
-        if (!['Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Manager or Admin can view categories"));
-        }
+        // if (!['Manager', 'Admin'].includes(req.user.roles)) {
+        //     return next(errorHandler(403, "Only Manager or Admin can view categories"));
+        // }
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = pagelimitForData;
+        const skip = (page - 1) * limit;
+
+        const totalCategories = await Category.countDocuments({ isDeleted: false });
         const categories = await Category.find({ isDeleted: false })
+            .skip(skip)
+            .limit(limit)
             .populate('createdBy', 'username')
             .populate('modifiedBy', 'username');
 
         res.status(200).json({
             success: true,
             count: categories.length,
+            totalCategories,
+            page,
+            totalPages: Math.ceil(totalCategories / limit),
             categories
         });
     } catch (error) {
@@ -249,20 +267,30 @@ export const restoreAllCategories = async (req, res, next) => {
     }
 };
 
-// Get all deleted categories (Manager/Admin only)
+// Get all deleted categories with pagination (Manager/Admin only)
 export const getDeletedCategories = async (req, res, next) => {
     try {
         if (!['Manager', 'Admin'].includes(req.user.roles)) {
             return next(errorHandler(403, "Only Manager or Admin can view deleted categories"));
         }
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = pagelimitForData;
+        const skip = (page - 1) * limit;
+
+        const totalDeletedCategories = await Category.countDocuments({ isDeleted: true });
         const categories = await Category.find({ isDeleted: true })
+            .skip(skip)
+            .limit(limit)
             .populate('createdBy', 'username')
             .populate('modifiedBy', 'username');
 
         res.status(200).json({
             success: true,
             count: categories.length,
+            totalDeletedCategories,
+            page,
+            totalPages: Math.ceil(totalDeletedCategories / limit),
             categories
         });
     } catch (error) {

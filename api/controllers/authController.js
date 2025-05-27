@@ -11,6 +11,11 @@ import {
   validateUserUpdate,
   getPointsRank,
 } from "../helpers/validators.js";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const pagelimitForData = process.env.DATA_FETCH_PAGE_LIMIT || 10;
 
 // Register a new user
 export const register = async (req, res, next) => {
@@ -19,8 +24,6 @@ export const register = async (req, res, next) => {
 
     // Validate input
     validateRegistration({ username, email, password });
-
-    
 
     // Check password strength
     const passwordCheck = validatePasswordStrength(password);
@@ -166,13 +169,29 @@ export const logout = (req, res, next) => {
   }
 };
 
-// Get all users (Admin only)
+// Get all users with pagination (Admin only)
 export const getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find({ isDeleted: false }).select("-password");
+    // if (req.user.roles !== "Admin") {
+    //   return next(errorHandler(403, "Only admin can view users"));
+    // }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = pagelimitForData;
+    const skip = (page - 1) * limit;
+
+    const totalUsers = await User.countDocuments({ isDeleted: false });
+    const users = await User.find({ isDeleted: false })
+      .skip(skip)
+      .limit(limit)
+      .select("-password");
+
     res.status(200).json({
       success: true,
       count: users.length,
+      totalUsers,
+      page,
+      totalPages: Math.ceil(totalUsers / limit),
       users,
     });
   } catch (error) {
@@ -276,23 +295,34 @@ export const restoreUser = async (req, res, next) => {
   }
 };
 
-// Get all deleted users
+// Get all deleted users with pagination
 export const getDeletedUsers = async (req, res, next) => {
-  try {
-    // Only admin can view deleted users
-    if (req.user.roles !== "Admin") {
-      return next(errorHandler(403, "Only admin can view deleted users"));
-    }
+    try {
+        if (req.user.roles !== "Admin") {
+            return next(errorHandler(403, "Only admin can view deleted users"));
+        }
 
-    const users = await User.find({ isDeleted: true }).select("-password");
-    res.status(200).json({
-      success: true,
-      count: users.length,
-      users,
-    });
-  } catch (error) {
-    next(error);
-  }
+        const page = parseInt(req.query.page) || 1;
+        const limit = pagelimitForData;
+        const skip = (page - 1) * limit;
+
+        const totalDeletedUsers = await User.countDocuments({ isDeleted: true });
+        const users = await User.find({ isDeleted: true })
+            .skip(skip)
+            .limit(limit)
+            .select("-password");
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            totalDeletedUsers,
+            page,
+            totalPages: Math.ceil(totalDeletedUsers / limit),
+            users,
+        });
+    } catch (error) {
+        next(error);
+    }
 };
 
 // Delete all users permanently (Admin only)
@@ -336,11 +366,10 @@ export const restoreAllUsers = async (req, res, next) => {
   }
 };
 
-
 export const getCurrentUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) return next(errorHandler(404, 'User not found'));
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return next(errorHandler(404, "User not found"));
 
     res.status(200).json({
       success: true,

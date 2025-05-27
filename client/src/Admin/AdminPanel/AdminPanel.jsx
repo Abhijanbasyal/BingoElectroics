@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink, Outlet } from "react-router-dom";
@@ -14,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Search,
+  Settings,
 } from "lucide-react";
 import {
   dropdownItemVariants,
@@ -40,20 +40,32 @@ const AdminPanel = () => {
   const menuItems = [
     { name: "Dashboard", icon: Home, path: "/admin" },
     {
-      name: "Users",
-      icon: Users,
-      path: "/admin/users",
-      subItems: [{ name: "Roles", path: "/admin/users/roles" }],
+      name: "Management",
+      icon: Settings,
+      subItems: [
+        { name: "Users", path: "/admin/management/users" },
+        { name: "Categories", path: "/admin/management/categories" },
+        { name: "Products", path: "/admin/management/products" },
+      ],
     },
     {
       name: "Form",
       icon: Folder,
       subItems: [
         { name: "Category", path: "/admin/form/category" },
+        { name: "Product", path: "/admin/form/product" },
         { name: "User", path: "/admin/form/user" },
       ],
     },
-    { name: "RecycleBin", icon: Trash, path: "/admin/recycle-bin" },
+    {
+      name: "RecycleBin",
+      icon: Trash,
+      subItems: [
+        { name: "User RecycleBin", path: "/admin/recycle-bin/users" },
+        { name: "Category RecycleBin", path: "/admin/recycle-bin/categories" },
+        { name: "Product RecycleBin", path: "/admin/recycle-bin/products" },
+      ],
+    },
     { name: "Profile", icon: User, path: "/admin/profile" },
     { name: "LogOut", icon: LogOut, path: "/admin/logout" },
   ];
@@ -83,7 +95,7 @@ const AdminPanel = () => {
         <motion.aside
           key="sidebar"
           initial="closed"
-          animate={isLargeScreen ? "open" : (isSidebarOpen ? "open" : "closed")}
+          animate={isLargeScreen ? "open" : isSidebarOpen ? "open" : "closed"}
           variants={sidebarVariants}
           className="fixed inset-y-0 left-0 z-50 w-64 bg-fourth text-white lg:static lg:w-64 shadow-xl"
         >

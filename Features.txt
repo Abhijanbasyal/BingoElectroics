@@ -20,8 +20,54 @@ Rank--------------------------->
 creating one component for table where it can detect the total column present in table and directly we can use it for all
 
 
+rating and reviews flows----------------------------
+now i get it how to do that reviews 
+like we go to the certain product page and 
+there we write reviews and then we post it and also while adding reviews there will be other customer reviews also present there.
 
+and for loyalty points using the cart where we add certain product in the cart and calculating the total cart products loyalty points
 
+=================================================================================
+for recommendation ai 
+
+1)  Content-Based Recommendation Using Title Similarity
+🎯 What it does:
+When a user visits a product page, it shows a few similar products based on the title and description (no need for user login, cart, or purchase data).
+
+🧠 How It Works:
+Store all product titles/descriptions in your database (already done).
+
+When someone views a product:
+
+Fetch that product.
+
+Use TF-IDF or sentence embeddings to compare it with other products.
+
+Return the top 3–5 most similar ones.
+
+🧪 Tools You’ll Use:
+Python (for the AI logic)
+
+Flask (simple API server)
+
+MongoDB (your existing DB)
+
+scikit-learn or Sentence Transformers (to calculate similarity)
+---------------------------------------------------------------------
+
+2) 🛍️ Related Products / “Customers Also Viewed”
+When viewing a product, show:
+
+Similar products by title/description
+
+Same category/sub-category
+
+Price range similarity
+
+✅ Tech: Cosine Similarity (TF-IDF), FastText, or Sentence Embeddings
+💡 Easy and effective.
+
+=================================================================================
 Features
 
 Kanban
@@ -29,7 +75,7 @@ Kanban
 loading fearture
 
 
-AI recommendation neural network product recommendation
+AI recom    mendation neural network product recommendation
 Product Category
 Search funcrtionality with filer and recommendation
 Payment gateway Khalti
