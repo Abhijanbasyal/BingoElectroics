@@ -42,6 +42,7 @@ const DataTable = ({ type, deleted = false }) => {
       const url = deleted
         ? `${permanentDeleteEndpoint}/${id}/permanent`
         : `${endpoint}/${id}`;
+        console.log(url);
       await axios.delete(url, { withCredentials: true });
       setData(data.filter((item) => item._id !== id));
       toast.success(`${type.slice(0, -1)} ${deleted ? 'permanently' : ''} deleted successfully`);

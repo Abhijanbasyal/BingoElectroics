@@ -44,11 +44,11 @@ const APIEndPoints = {
     method: "get",
   },
   Restore_user: {
-    url: `${serverDomain}/auth/users`, // Base URL, append /:id/restore
+    url: `${serverDomain}/auth/users`,
     method: "put",
   },
   Permanent_delete_user: {
-    url: `${serverDomain}/auth/users`, // Base URL, append /:id/permanent
+    url: `${serverDomain}/auth/users`, 
     method: "delete",
   },
   Get_deleted_categories: {

@@ -4,6 +4,10 @@ admin@gmail.com
 Admin@123
 
 
+Main important
+
+Product fetch garda farak role ko farak banauney as certain celler ko certain product hunxa aru ko tw dhekharuna bhayena
+
 Steps:
 login/signup ------------------> done -------------------> GUI LEft
 Category ---------------------->                          (note: in category we cannot delete category if there

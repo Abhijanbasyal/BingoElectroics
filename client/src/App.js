@@ -16,6 +16,7 @@ import AddCategory from "./Admin/Forms/AddCategory";
 import AddProducts from "./Admin/Forms/AddProducts";
 import DataTable from "./Admin/constants/DataTable";
 import UserForm from "./Admin/Forms/UserForm";
+import EditForm from "./Admin/constants/EditForm";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -44,6 +45,7 @@ const App = () => {
         <Route path="form/category" element={<AddCategory />} />
         <Route path="form/product" element={<AddProducts />} />
         <Route path="form/user" element={<UserForm />} />
+        <Route path="form/edit/:type/:id" element={<EditForm />} />
         <Route path="management/users" element={<DataTable type="users" />} />
         <Route
           path="management/categories"
@@ -53,9 +55,18 @@ const App = () => {
           path="management/products"
           element={<DataTable type="products" />}
         />
-        <Route path="recycle-bin/users" element={<DataTable type="users" deleted={true} />} />
-        <Route path="recycle-bin/categories" element={<DataTable type="categories" deleted={true} />} />
-        <Route path="recycle-bin/products" element={<DataTable type="products" deleted={true} />} />
+        <Route
+          path="recycle-bin/users"
+          element={<DataTable type="users" deleted={true} />}
+        />
+        <Route
+          path="recycle-bin/categories"
+          element={<DataTable type="categories" deleted={true} />}
+        />
+        <Route
+          path="recycle-bin/products"
+          element={<DataTable type="products" deleted={true} />}
+        />
         <Route path="*" element={<NotFound />} />{" "}
         {/* Catch-all for undefined admin routes */}
       </Route>
