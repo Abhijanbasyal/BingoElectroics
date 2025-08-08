@@ -1,4 +1,3 @@
-
 import APIEndPoints from "../../middleware/APIEndPoints";
 
 const tableConfig = {
@@ -48,6 +47,18 @@ const tableConfig = {
     ],
     editPath: '/admin/form/edit/product',
     viewPath: '/admin/products',
+  },
+  banners: {
+    endpoint: APIEndPoints.Get_banners.url,
+    deletedEndpoint: APIEndPoints.Get_deleted_banners.url,
+    restoreEndpoint: APIEndPoints.Restore_banner.url,
+    permanentDeleteEndpoint: APIEndPoints.Permanent_delete_banner.url,
+    columns: [
+      { key: 'image', label: 'Image', format: 'image' },
+      { key: 'createdDate', label: 'Created Date', format: 'date' },
+    ],
+    editPath: '/admin/form/edit/banner',
+    viewPath: '/admin/banners',
   },
 };
 

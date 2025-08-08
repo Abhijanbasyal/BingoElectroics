@@ -20,6 +20,9 @@ const pagelimitForData = process.env.DATA_FETCH_PAGE_LIMIT || 10;
 // Register a new user
 export const register = async (req, res, next) => {
   try {
+    if (!req.body || !req.body.username || !req.body.password|| !req.body.email) {
+    return res.status(400).json({ message: 'Username is required' });
+    }
     const { username, email, password, roles } = req.body;
 
     // Validate input

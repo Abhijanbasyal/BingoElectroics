@@ -18,7 +18,9 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.0",
     "react-scripts": "5.0.1",
+    "react-slick": "^0.31.0",
     "react-spinners": "^0.17.0",
+    "slick-carousel": "^1.8.1",
     "swiper": "^11.2.8",
     "web-vitals": "^2.1.4"
   },

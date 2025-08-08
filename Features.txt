@@ -4,6 +4,20 @@ admin@gmail.com
 Admin@123
 
 
+GUI
+About us  : title imag description blogs 
+about us ma carousel using swiper library
+
+Contact us page: 
+Notification page:
+
+prodict card ma chahi add to card button rakhna ani view detail wala button  lucid-react for icon
+Product details page 
+view dabyo bhaney euta page kholxa tesma chahi certain card ko details aauxa .
+
+
+
+
 Main important
 
 Product fetch garda farak role ko farak banauney as certain celler ko certain product hunxa aru ko tw dhekharuna bhayena

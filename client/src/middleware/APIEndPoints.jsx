@@ -75,6 +75,11 @@ const APIEndPoints = {
     url: `${serverDomain}/products`, // Base URL, append /:id/permanent
     method: "delete",
   },
+  Upload_banner: { url: `${serverDomain}/banners/upload`, method: "post" },
+  Get_banners: { url: `${serverDomain}/banners`, method: "get" },
+  Get_deleted_banners: { url: `${serverDomain}/banners/deleted`, method: "get" },
+  Restore_banner: { url: `${serverDomain}/banners`, method: "put" },
+  Permanent_delete_banner: { url: `${serverDomain}/banners`, method: "delete" },
 };
 
 export default APIEndPoints;

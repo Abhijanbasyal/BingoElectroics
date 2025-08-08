@@ -7,13 +7,15 @@ const Header = () => {
   return (
     <header className="bg-primary text-fourth p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold">MyApp</Link>
+        <Link to="/" className="text-2xl font-bold">BingoElectronics</Link>
         <div>
           {user ? (
             <span className="text-lg">Welcome, {user.username}</span>
           ) : (
-            <Link to="/login" className="text-tertiary hover:underline">Login</Link>
-          )}
+            <Link to="/login" className="text-tertiary hover:underline">Login</Link>  
+          )
+          }
+
         </div>
       </div>
     </header>

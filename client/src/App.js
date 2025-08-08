@@ -1,12 +1,17 @@
 import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 
+
 import UserLayout from "./layouts/UserLayout";
 import AdminLayout from "./layouts/AdminLayout";
+import SellerLayout from "./layouts/SellerLayout";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import NotFound from "./components/NotFound";
 import Home from "./pages/Home/Home";
+import Products from "./pages/Products/Products";
+import Product from "./pages/Products/Product";
+import Cart from "./pages/Products/Cart";
 import { fetchCurrentUser } from "./redux/authSlice";
 import GlobalLoading from "./components/GlobalLoading";
 import { useDispatch, useSelector } from "react-redux";
@@ -17,6 +22,9 @@ import AddProducts from "./Admin/Forms/AddProducts";
 import DataTable from "./Admin/constants/DataTable";
 import UserForm from "./Admin/Forms/UserForm";
 import EditForm from "./Admin/constants/EditForm";
+import SellerAddProducts from "./Seller/Forms/AddProducts";
+import SellerDataTable from "./Seller/constants/Datatable";
+import SellerEditForm from "./Seller/constants/EditForms";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -38,6 +46,9 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/not-found" element={<NotFound />} />
+        <Route path="/products/:id" element={<Product />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/cart" element={<Cart />} />
       </Route>
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>
@@ -69,6 +80,13 @@ const App = () => {
         />
         <Route path="*" element={<NotFound />} />{" "}
         {/* Catch-all for undefined admin routes */}
+      </Route>
+      <Route path="/seller" element={<SellerLayout />}>
+        <Route path="management/products" element={<SellerDataTable type="products" />} />
+        <Route path="Forms/AddProduct" element={<SellerAddProducts />} />
+        <Route path="Forms/edit/:type/:id" element={<SellerEditForm />} />
+        <Route path="recycle-bin/products" element={<SellerDataTable type="products" deleted={true} />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

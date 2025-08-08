@@ -130,7 +130,9 @@ export const getProductById = async (req, res, next) => {
         const product = await Product.findOne({ _id: req.params.id, isDeleted: false })
             .populate('category', 'title')
             .populate('createdBy', 'username')
-            .populate('modifiedBy', 'username');
+            .populate('modifiedBy', 'username')
+            .populate('comments.userId', 'name')
+            .lean();
 
         if (!product) {
             return next(errorHandler(404, "Product not found"));
@@ -309,4 +311,50 @@ export const getDeletedProducts = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+};
+
+export const incrementProductView = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user.id; // From verifyToken
+
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    // Check if user has already viewed this product
+    if (!product.viewedBy.includes(userId)) {
+      product.views += 1;
+      product.viewedBy.push(userId);
+      await product.save();
+    }
+
+    res.status(200).json({ views: product.views });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getFeaturedProducts = async (req, res) => {
+  try {
+    // Alternative: Fetch top 5 products by views
+    const featuredProducts = await Product.find()
+      .sort({ views: -1 }) // Sort by views in descending order
+      .limit(5)
+      .select('_id title price images category description points views bought');
+    res.status(200).json(featuredProducts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProductBought = async (productId) => {
+  try {
+    const product = await Product.findById(productId);
+    if (product) {
+      product.bought += 1;
+      await product.save();
+    }
+  } catch (error) {
+    console.error('Error updating bought count:', error);
+  }
 };

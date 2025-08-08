@@ -15,4 +15,8 @@ module.exports = {
   },
   plugins: [],
 }
+
+//povide me the gui of certain using this color tamplete givewn above and also using the framer motion libary 
+
+
 //use this color palette =====> primary:FFF0CE, secondary: FFC436, tertiary: 0174BE,fourth: 0C356A

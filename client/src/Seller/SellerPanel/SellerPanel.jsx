@@ -1,30 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink, Outlet } from "react-router-dom";
+import { Menu, X, Folder, LogOut, ChevronDown, ChevronRight } from "lucide-react";
 import {
-  Menu,
-  X,
-  Home,
-  Users,
-  User,
-  Folder,
-  Trash,
-  LogOut,
-  ChevronDown,
-  ChevronRight,
-  Search,
-  Settings,
-} from "lucide-react";
-import {
-  dropdownItemVariants,
   menuItemVariants,
-  dropdownVariants,
   sidebarVariants,
   submenuVariants,
   submenuItemVariants,
 } from "../../Vairants/export";
 
-const AdminPanel = () => {
+const SellerPanel = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -37,39 +22,15 @@ const AdminPanel = () => {
   }, []);
 
   const menuItems = [
-    { name: "Dashboard", icon: Home, path: "/admin" },
     {
-      name: "Management",
-      icon: Settings,
-      subItems: [
-        { name: "Users", path: "/admin/management/users" },
-        { name: "Categories", path: "/admin/management/categories" },
-        { name: "Products", path: "/admin/management/products" },
-        { name: "Banners", path: "/admin/management/banners" },
-      ],
-    },
-    {
-      name: "Form",
+      name: "Products",
       icon: Folder,
       subItems: [
-        { name: "Category", path: "/admin/form/category" },
-        { name: "Product", path: "/admin/form/product" },
-        { name: "User", path: "/admin/form/user" },
-        { name: "Banner", path: "/admin/form/banner" },
+        { name: "Manage Products", path: "/seller/management/products" },
+        { name: "Add Product", path: "/seller/Forms/AddProduct" },
       ],
     },
-    {
-      name: "RecycleBin",
-      icon: Trash,
-      subItems: [
-        { name: "User RecycleBin", path: "/admin/recycle-bin/users" },
-        { name: "Category RecycleBin", path: "/admin/recycle-bin/categories" },
-        { name: "Product RecycleBin", path: "/admin/recycle-bin/products" },
-        { name: "Banner RecycleBin", path: "/admin/recycle-bin/banners" },
-      ],
-    },
-    { name: "Profile", icon: User, path: "/admin/profile" },
-    { name: "LogOut", icon: LogOut, path: "/admin/logout" },
+    { name: "LogOut", icon: LogOut, path: "/seller/logout" },
   ];
 
   const toggleSubMenu = (name) => {
@@ -209,83 +170,14 @@ const AdminPanel = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center">
-            <motion.button
-              className="lg:hidden mr-4"
-              onClick={() => setIsSidebarOpen(true)}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Menu size={24} className="text-fourth" />
-            </motion.button>
-
-            <motion.div
-              className="relative"
-              whileHover={{ scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 400 }}
-            >
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-fourth/70"
-              />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 rounded-lg bg-white text-fourth border border-tertiary/30 focus:outline-none focus:ring-2 focus:ring-tertiary/50 focus:border-transparent w-64"
-              />
-            </motion.div>
-          </div>
-
-          <div className="relative">
-            <motion.button
-              className="flex items-center space-x-2 text-fourth bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all duration-200"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span>Username</span>
-              <motion.div
-                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDown size={18} />
-              </motion.div>
-            </motion.button>
-
-            <AnimatePresence>
-              {isDropdownOpen && (
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  variants={dropdownVariants}
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 border border-tertiary/20"
-                  onMouseLeave={() => setIsDropdownOpen(false)}
-                >
-                  <motion.div variants={dropdownItemVariants}>
-                    <NavLink
-                      to="/admin/profile"
-                      className="flex items-center px-4 py-2 text-fourth hover:bg-primary/50 transition-colors duration-200"
-                      onClick={() => setIsDropdownOpen(false)}
-                    >
-                      <User size={16} className="mr-2" />
-                      Profile
-                    </NavLink>
-                  </motion.div>
-                  <motion.div variants={dropdownItemVariants}>
-                    <NavLink
-                      to="/admin/logout"
-                      className="flex items-center px-4 py-2 text-fourth hover:bg-primary/50 transition-colors duration-200"
-                      onClick={() => setIsDropdownOpen(false)}
-                    >
-                      <LogOut size={16} className="mr-2" />
-                      Logout
-                    </NavLink>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <motion.button
+            className="lg:hidden mr-4"
+            onClick={() => setIsSidebarOpen(true)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Menu size={24} className="text-fourth" />
+          </motion.button>
         </motion.header>
 
         <motion.main
@@ -301,4 +193,4 @@ const AdminPanel = () => {
   );
 };
 
-export default AdminPanel;
+export default SellerPanel;

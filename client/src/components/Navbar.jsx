@@ -79,7 +79,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
             <NavLink to="/" className="text-2xl font-bold">
-              ShopEasy
+              BingoElectronics
             </NavLink>
           </div>
           <div className="hidden md:flex space-x-8">
@@ -94,7 +94,7 @@ const Navbar = () => {
               Home
             </NavLink>
             <NavLink
-              to="/about"
+              to="/aboutUs"
               className={({ isActive }) =>
                 `hover:text-[#FFC436] transition-colors ${
                   isActive ? "text-[#FFC436]" : ""
@@ -123,7 +123,7 @@ const Navbar = () => {
             >
               Contact
             </NavLink>
-            {isAuthenticated && (
+            {isAuthenticated && user?.roles === "Admin" && (
               <NavLink
                 to="/admin"
                 className={({ isActive }) =>
@@ -146,10 +146,22 @@ const Navbar = () => {
               Admin Dashboard
             </NavLink>
           )}
+          {isAuthenticated && user?.roles === "Seller" && (
+              <NavLink
+                to="/seller"
+                className={({ isActive }) =>
+                  `hover:text-[#FFC436] transition-colors ${
+                    isActive ? "text-[#FFC436]" : ""
+                  }`
+                }
+              >
+                Seller Panel
+              </NavLink>
+            )}
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                <NavLink to="/cart/add" className="relative">
+                <NavLink to="/cart" className="relative">
                   <FiShoppingCart size={24} className="hover:text-[#FFC436]" />
                   {cartCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-[#FFC436] text-[#0C356A] text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -158,6 +170,7 @@ const Navbar = () => {
                   )}
                 </NavLink>
                 <button
+                  to="/"
                   onClick={handlelogoutUser}
                   className="bg-[#0174BE] text-[#FFF0CE] px-4 py-2 rounded-lg hover:bg-[#FFC436] transition-colors"
                 >

@@ -27,6 +27,10 @@ const ProductCard = ({ product }) => {
     toast.success(`${product.title} added to cart!`);
   };
 
+  const handleViewProduct = () => {
+    navigate(`/products/${product._id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -43,12 +47,20 @@ const ProductCard = ({ product }) => {
         <h3 className="text-lg font-semibold text-[#0C356A]">{product.title}</h3>
         <p className="text-[#0174BE] font-medium">${product.price.toFixed(2)}</p>
         <p className="text-sm text-[#0C356A]">Points: {product.points}</p>
-        <button
-          onClick={handleAddToCart}
-          className="mt-2 w-full bg-[#0174BE] text-[#FFF0CE] py-2 rounded-lg hover:bg-[#FFC436] transition-colors"
-        >
-          Add to Cart
-        </button>
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={handleViewProduct}
+            className="flex-1 bg-[#FFC436] text-[#0C356A] py-2 rounded-lg font-semibold hover:bg-[#ffda74] transition-colors"
+          >
+            View Product
+          </button>
+          <button
+            onClick={handleAddToCart}
+            className="flex-1 bg-[#0174BE] text-[#FFF0CE] py-2 rounded-lg font-semibold hover:bg-[#045e9d] transition-colors"
+          >
+            Add to Cart
+          </button>
+        </div>
       </div>
     </motion.div>
   );
