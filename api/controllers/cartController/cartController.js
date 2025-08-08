@@ -1,5 +1,8 @@
 import Cart from '../../models/cart/cart.js';
 import { errorHandler } from '../../utils/error.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export const getCart = async (req, res, next) => {
   try {

@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux';
 const Home = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [banners, setBanners] = useState([]);
+  const [banners, setBanners] = useState([]); // Ensure initial state is an array
   const [loading, setLoading] = useState(true);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
@@ -29,9 +29,10 @@ const Home = () => {
 
         setCategories(catResponse.data.categories || []);
         setProducts(prodResponse.data.products || []);
-        setBanners(bannerResponse.data || []);
+        setBanners(bannerResponse.data.banners || []); // Access the 'banners' array from response
       } catch (err) {
         toast.error('Failed to fetch data');
+        console.error('Fetch error:', err.response ? err.response.data : err.message);
       } finally {
         setLoading(false);
       }

@@ -19,6 +19,7 @@ import Dashboard from "./Admin/Dashboard";
 import ProtectedRoute from "./helpers/ProtectedRoute";
 import AddCategory from "./Admin/Forms/AddCategory";
 import AddProducts from "./Admin/Forms/AddProducts";
+import AddBanner from "./Admin/Forms/AddBanner";
 import DataTable from "./Admin/constants/DataTable";
 import UserForm from "./Admin/Forms/UserForm";
 import EditForm from "./Admin/constants/EditForm";
@@ -55,6 +56,7 @@ const App = () => {
         <Route index element={<Dashboard />} /> {/* Default route for /admin */}
         <Route path="form/category" element={<AddCategory />} />
         <Route path="form/product" element={<AddProducts />} />
+        <Route path="form/banner" element={<AddBanner />} />
         <Route path="form/user" element={<UserForm />} />
         <Route path="form/edit/:type/:id" element={<EditForm />} />
         <Route path="management/users" element={<DataTable type="users" />} />
@@ -67,12 +69,21 @@ const App = () => {
           element={<DataTable type="products" />}
         />
         <Route
+          path="management/banners"
+          element={<DataTable type="banners" />}
+        />
+        <Route
           path="recycle-bin/users"
           element={<DataTable type="users" deleted={true} />}
         />
+        
         <Route
           path="recycle-bin/categories"
           element={<DataTable type="categories" deleted={true} />}
+        />
+        <Route
+          path="recycle-bin/banners"
+          element={<DataTable type="banners" deleted={true} />}
         />
         <Route
           path="recycle-bin/products"

@@ -7,8 +7,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import APIEndPoints from '../../middleware/APIEndPoints';
 
 const AddBanner = () => {
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,11 +18,42 @@ const AddBanner = () => {
   const cloudinaryName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
 
   const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImagePreview(URL.createObjectURL(file));
-      setImage(file);
+    const files = Array.from(e.target.files);
+    if (files.length + images.length > 5) {
+      toast.error('You can upload a maximum of 5 images');
+      return;
     }
+
+    setImagePreviews((prev) => [...prev, ...files.map(file => URL.createObjectURL(file))]);
+
+    setLoading(true);
+    try {
+      const uploadedUrls = await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('upload_preset', cloudinaryPresets);
+
+          const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${cloudinaryName}/image/upload`,
+            formData
+          );
+          return response.data.secure_url;
+        })
+      );
+      setImages((prev) => [...prev, ...uploadedUrls]);
+      toast.success('Images uploaded to Cloudinary!');
+    } catch (err) {
+      toast.error('Failed to upload images to Cloudinary');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    toast.success('Image removed');
   };
 
   const handleSubmit = async (e) => {
@@ -31,32 +62,26 @@ const AddBanner = () => {
     setSuccess(null);
     setLoading(true);
 
-    if (!image) {
-      setError('Image is required');
+    if (!images.length) {
+      setError('At least one image is required');
       setLoading(false);
-      toast.error('Please upload an image');
+      toast.error('Please upload at least one image');
       return;
     }
 
     try {
-      const formData = new FormData();
-      formData.append('file', image);
-      formData.append('upload_preset', cloudinaryPresets);
-
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudinaryName}/image/upload`,
-        formData
-      );
-      const imageUrl = response.data.secure_url;
-
-      await axios.post(APIEndPoints.Upload_banner.url, { image: imageUrl }, { withCredentials: true });
+      const url = APIEndPoints.Upload_banner.url;
+      console.log('Sending request to:', url, 'with data:', { image: images });
+      const response = await axios.post(url, { image: images }, { withCredentials: true });
+      console.log('Backend response:', response.data);
 
       setSuccess('Banner uploaded successfully!');
       toast.success('Banner uploaded successfully!');
-      setImage(null);
-      setImagePreview(null);
+      setImages([]);
+      setImagePreviews([]);
       setTimeout(() => navigate('/admin/management/banners'), 2000);
     } catch (err) {
+      console.error('Backend error:', err.response ? err.response.data : err.message);
       setError(err.response?.data?.message || 'Failed to upload banner');
       toast.error(err.response?.data?.message || 'Failed to upload banner');
     } finally {
@@ -98,41 +123,55 @@ const AddBanner = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="image" className="block text-sm font-medium text-fourth">
-            Banner Image
+          <label htmlFor="images" className="block text-sm font-medium text-fourth">
+            Banner Images (Max 5)
           </label>
           <div className="mt-1 flex items-center space-x-2">
             <input
               type="file"
-              id="image"
+              id="images"
               accept="image/*"
+              multiple
               onChange={handleImageChange}
               className="hidden"
               disabled={loading}
             />
             <label
-              htmlFor="image"
+              htmlFor="images"
               className={`flex items-center justify-center w-full p-2 rounded-lg bg-white text-fourth border border-tertiary/30 cursor-pointer hover:bg-tertiary/10 transition-all duration-200 ${
                 loading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
               <ImageIcon size={20} className="mr-2" />
-              Upload Image
+              Upload Images
             </label>
           </div>
-          {imagePreview && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2 }}
-              className="mt-2 relative"
-            >
-              <img
-                src={imagePreview}
-                alt="Banner Preview"
-                className="w-full h-48 object-cover rounded-lg"
-              />
-            </motion.div>
+          {imagePreviews.length > 0 && (
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {imagePreviews.map((preview, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative"
+                >
+                  <img
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    disabled={loading}
+                  >
+                    X
+                  </button>
+                </motion.div>
+              ))}
+            </div>
           )}
         </div>
 

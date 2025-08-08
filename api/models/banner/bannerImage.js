@@ -1,8 +1,14 @@
 import mongoose from 'mongoose';
 
 const bannerImageSchema = new mongoose.Schema({
-  image: { type: String, required: true }, // Store image URL or base64
+  image: [{ type: String, required: true, trim: true }], // Store image URL or base64
   createdAt: { type: Date, default: Date.now },
+  isDeleted: { type: Boolean, default: false },
+  deletedDate: { type: Date },
+}, {
+    timestamps: false
 });
 
-export default mongoose.model('BannerImage', bannerImageSchema);
+const Banner = mongoose.model('BannerImage', bannerImageSchema);
+
+export default Banner;

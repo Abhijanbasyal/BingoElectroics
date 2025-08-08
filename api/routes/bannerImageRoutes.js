@@ -6,7 +6,7 @@ import {
   deleteBannerImage,
   permanentDeleteBannerImage,
   restoreBannerImage,
-} from '../controllers/bannerImageController.js';
+} from '../controllers/bannerController/bannerImageController.js';
 import { verifyToken } from '../utils/verifyToken.js';
 
 const router = express.Router();
