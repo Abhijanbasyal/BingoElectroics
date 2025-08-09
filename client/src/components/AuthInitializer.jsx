@@ -1,17 +1,20 @@
-// components/AuthInitializer.jsx
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { fetchCurrentUser } from '../redux/authSlice';
+  import { useDispatch } from 'react-redux';
+  import { fetchCurrentUser } from '../redux/authSlice';
 
-const AuthInitializer = () => {
-  const dispatch = useDispatch();
+  const AuthInitializer = () => {
+    const dispatch = useDispatch();
 
-  useEffect(() => {
-    console.log('Dispatching fetchCurrentUser');
-    dispatch(fetchCurrentUser());
-  }, [dispatch]);
+    useEffect(() => {
+      console.log('Dispatching fetchCurrentUser');
+      dispatch(fetchCurrentUser()).then((result) => {
+        console.log('fetchCurrentUser result:', result);
+      }).catch((error) => {
+        console.error('fetchCurrentUser error:', error);
+      });
+    }, [dispatch]);
 
-  return null; // no UI
-};
+    return null; // no UI
+  };
 
-export default AuthInitializer;
+  export default AuthInitializer;

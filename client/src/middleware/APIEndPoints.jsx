@@ -80,6 +80,10 @@ const APIEndPoints = {
   Get_deleted_banners: { url: `${serverDomain}/banners/deleted`, method: "get" },
   Restore_banner: { url: `${serverDomain}/banners`, method: "put" },
   Permanent_delete_banner: { url: `${serverDomain}/banners`, method: "delete" },
+  Get_cart: { url: `${serverDomain}/cart`, method: "get" }, // Base URL, append /:userId
+  Add_to_cart: { url: `${serverDomain}/cart`, method: "post" },
+  Remove_from_cart: { url: `${serverDomain}/cart`, method: "delete" }, // Base URL, append /:userId/:productId
+  Update_cart: { url: `${serverDomain}/cart`, method: "put" },
 };
 
 export default APIEndPoints;

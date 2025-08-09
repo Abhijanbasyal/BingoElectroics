@@ -91,9 +91,6 @@ export const updateProduct = async (req, res, next) => {
 // Get all products with pagination
 export const getAllProducts = async (req, res, next) => {
     try {
-        if (!['Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Manager or Admin can view all products"));
-        }
 
         const page = parseInt(req.query.page) || 1;
         const limit = pagelimitForData;
@@ -123,9 +120,6 @@ export const getAllProducts = async (req, res, next) => {
 // Get product by ID
 export const getProductById = async (req, res, next) => {
     try {
-        if (!['Seller', 'Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Seller, Manager, or Admin can view products"));
-        }
 
         const product = await Product.findOne({ _id: req.params.id, isDeleted: false })
             .populate('category', 'title')
