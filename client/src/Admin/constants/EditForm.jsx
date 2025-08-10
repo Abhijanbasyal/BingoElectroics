@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
@@ -14,13 +12,18 @@ const EditForm = () => {
   const { type, id } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({});
+  const [currentImages, setCurrentImages] = useState([]); // Array of image URLs
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [newImages, setNewImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [categories, setCategories] = useState([]);
   const [config, setConfig] = useState(getFormConfig(type, id));
+
+  const cloudinaryPresets = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
+  const cloudinaryName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
 
   // Fetch data and categories
   useEffect(() => {
@@ -32,9 +35,11 @@ const EditForm = () => {
         const dataKey = type === "user" ? "user" : type.slice(0, -1);
         setFormData(response.data[dataKey] || response.data);
 
-        // Set image previews for products
+        // Set images for products
         if (type === "product" && response.data.product?.images) {
-          setImagePreviews(response.data.product.images);
+          const images = response.data.product.images;
+          setCurrentImages(images);
+          setImagePreviews(images);
         }
 
         // Fetch categories for product form
@@ -74,25 +79,52 @@ const EditForm = () => {
   // Handle form changes
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === "images") {
-      const newFiles = Array.from(files);
-      setNewImages(newFiles);
-      const previews = newFiles.map((file) => URL.createObjectURL(file));
-      setImagePreviews([...imagePreviews, ...previews]);
+    if (name === "images" && files.length > 0) {
+      handleImageUpload(files);
     } else {
       setFormData({ ...formData, [name]: value });
     }
     setError("");
   };
 
+  // Handle image upload to Cloudinary
+  const handleImageUpload = async (files) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length + currentImages.length > 5) {
+      toast.error("You can upload a maximum of 5 images");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploadedUrls = await Promise.all(
+        fileArray.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", cloudinaryPresets);
+
+          const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${cloudinaryName}/image/upload`,
+            formData
+          );
+          return response.data.secure_url;
+        })
+      );
+      setCurrentImages((prev) => [...prev, ...uploadedUrls]);
+      setImagePreviews((prev) => [...prev, ...uploadedUrls]);
+      toast.success("Images uploaded successfully!");
+    } catch (err) {
+      toast.error("Failed to upload images");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Remove image
   const removeImage = (index) => {
-    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
-    setNewImages(
-      newImages.filter(
-        (_, i) => i >= imagePreviews.length - newImages.length && i !== index
-      )
-    );
+    setCurrentImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    toast.success("Image removed");
   };
 
   // Handle form submission
@@ -100,6 +132,7 @@ const EditForm = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setSubmitLoading(true);
 
     // Validate required fields
     for (const field of config.fields) {
@@ -111,30 +144,30 @@ const EditForm = () => {
       ) {
         setError(`${field.label} is required`);
         toast.error(`${field.label} is required`);
+        setSubmitLoading(false);
         return;
       }
     }
 
     try {
-      const submitData = new FormData();
-
-      // Add form fields
-      Object.keys(formData).forEach((key) => {
-        if (key !== "images" && formData[key] !== undefined && formData[key] !== null) {
-          submitData.append(key, formData[key]);
+      // Build submit data, skipping empty password and overriding images
+      const submitData = {};
+      Object.entries(formData).forEach(([key, value]) => {
+        if (!(key === "password" && !value)) {
+          submitData[key] = value;
         }
       });
 
-      // Add new images for products
+      // Override images for products
       if (type === "product") {
-        newImages.forEach((image) => {
-          submitData.append("images", image);
-        });
+        submitData.images = currentImages;
+        submitData.price = parseFloat(submitData.price) || 0;
+        submitData.loyaltyPoints = parseInt(submitData.loyaltyPoints) || 0;
+        submitData.productQuantity = parseInt(submitData.productQuantity) || 0;
       }
 
       await axios.put(config.updateEndpoint, submitData, {
         withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
       });
 
       setSuccess(`${type.slice(0, -1)} updated successfully!`);
@@ -143,6 +176,8 @@ const EditForm = () => {
     } catch (err) {
       setError(err.response?.data?.message || `Failed to update ${type.slice(0, -1)}`);
       toast.error(err.response?.data?.message || `Failed to update ${type.slice(0, -1)}`);
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -219,7 +254,7 @@ const EditForm = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#0174BE] focus:border-transparent"
                       placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                      disabled={loading}
+                      disabled={loading || uploading || submitLoading}
                       required={field.required}
                       rows={4}
                     />
@@ -230,7 +265,7 @@ const EditForm = () => {
                       value={formData[field.name] || ""}
                       onChange={handleChange}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#0174BE] focus:border-transparent"
-                      disabled={loading || (field.name === "category" && !categories.length)}
+                      disabled={loading || uploading || submitLoading || (field.name === "category" && !categories.length)}
                       required={field.required}
                     >
                       <option value="">Select {field.label}</option>
@@ -256,7 +291,7 @@ const EditForm = () => {
                             type="file"
                             onChange={handleChange}
                             className="hidden"
-                            disabled={loading}
+                            disabled={loading || uploading || submitLoading}
                             multiple={field.multiple}
                             accept={field.accept}
                           />
@@ -278,6 +313,7 @@ const EditForm = () => {
                                   type="button"
                                   onClick={() => removeImage(index)}
                                   className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  disabled={loading || uploading || submitLoading}
                                 >
                                   <X size={16} />
                                 </button>
@@ -296,7 +332,7 @@ const EditForm = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#0174BE] focus:border-transparent"
                       placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                      disabled={loading}
+                      disabled={loading || uploading || submitLoading}
                       required={field.required}
                       step={field.step}
                     />
@@ -310,18 +346,18 @@ const EditForm = () => {
                 type="button"
                 onClick={() => navigate(-1)}
                 className="px-6 py-2 border border-[#0C356A] rounded-lg text-[#0C356A] font-medium hover:bg-[#0C356A] hover:text-[#FFF0CE] transition-colors"
-                disabled={loading}
+                disabled={loading || uploading || submitLoading}
               >
                 Cancel
               </button>
               <motion.button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploading || submitLoading}
                 className="px-6 py-2 bg-[#0C356A] text-[#FFF0CE] font-medium rounded-lg hover:bg-[#0174BE] transition-colors"
-                whileHover={{ scale: loading ? 1 : 1.05 }}
-                whileTap={{ scale: loading ? 1 : 0.95 }}
+                whileHover={{ scale: loading || uploading || submitLoading ? 1 : 1.05 }}
+                whileTap={{ scale: loading || uploading || submitLoading ? 1 : 0.95 }}
               >
-                {loading ? "Updating..." : "Update"}
+                {submitLoading ? "Updating..." : "Update"}
               </motion.button>
             </div>
           </form>

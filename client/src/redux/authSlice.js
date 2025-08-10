@@ -4,12 +4,12 @@ import APIEndPoints from "../middleware/APIEndPoints";
 
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
-  async ({ username, password }, { rejectWithValue }) => {
+  async (formData, { rejectWithValue }) => {
     try {
       const response = await axios({
         method: APIEndPoints.login.method,
         url: APIEndPoints.login.url,
-        data: { username, password },
+        data: formData,
         withCredentials: true,
       });
       return response.data.user;
@@ -37,12 +37,12 @@ export const fetchCurrentUser = createAsyncThunk(
 
 export const signupUser = createAsyncThunk(
   "auth/signupUser",
-  async ({ username, email, password, roles }, { rejectWithValue }) => {
+  async (formData, { rejectWithValue }) => {
     try {
       const response = await axios({
         method: APIEndPoints.signUp.method,
         url: APIEndPoints.signUp.url,
-        data: { username, email, password, roles },
+        data: formData,
         withCredentials: true,
       });
       return response.data.user;
@@ -73,7 +73,6 @@ const authSlice = createSlice({
   initialState: {
     user: null,
     isAuthenticated: false,
-    // loadingAuthenticated: true,
     loading: false,
     error: null,
   },
@@ -95,19 +94,13 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message;
+        state.error = action.payload.message || 'An error occurred';
       })
-      // .addCase(fetchCurrentUser.pending, (state) => {
-      //   state.loadingAuthenticated = true;
-      //   state.error = null;
-      // })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
-        // state.loadingAuthenticated = false;
         state.user = action.payload;
         state.isAuthenticated = true;
       })
       .addCase(fetchCurrentUser.rejected, (state) => {
-        // state.loadingAuthenticated = false;
         state.user = null;
         state.isAuthenticated = false;
       })
@@ -122,7 +115,7 @@ const authSlice = createSlice({
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message;
+        state.error = action.payload.message || 'An error occurred';
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;

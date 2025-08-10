@@ -1,41 +1,6 @@
-// import { NavLink } from 'react-router-dom';
-// import { useSelector, useDispatch } from 'react-redux';
-// import { logoutUser } from '../redux/authSlice';
-
-// const Navbar = () => {
-//   const { user, isAuthenticated } = useSelector((state) => state.auth);
-//   const dispatch = useDispatch();
-
-//   const handleLogout = () => {
-//     dispatch(logoutUser());
-//   };
-
-//   return (
-//     <nav className="bg-secondary text-fourth p-4">
-//       <div className="container mx-auto flex space-x-4">
-//         <NavLink to="/" className={({ isActive }) => isActive ? "text-tertiary font-bold" : "hover:text-tertiary"}>Home</NavLink>
-//         {isAuthenticated && user?.roles === 'Admin' && (
-//           <NavLink to="/admin" className={({ isActive }) => isActive ? "text-tertiary font-bold" : "hover:text-tertiary"}>Admin Dashboard</NavLink>
-//         )}
-//         {isAuthenticated && (
-//           <button onClick={handleLogout} className="hover:text-tertiary">Logout</button>
-//         )}
-//         {!isAuthenticated && (
-//           <>
-//             <NavLink to="/login" className={({ isActive }) => isActive ? "text-tertiary font-bold" : "hover:text-tertiary"}>Login</NavLink>
-//             <NavLink to="/signup" className={({ isActive }) => isActive ? "text-tertiary font-bold" : "hover:text-tertiary"}>Signup</NavLink>
-//           </>
-//         )}
-//       </div>
-//     </nav>
-//   );
-// };
-
-// export default Navbar;
-
 import React, { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
 import { NavLink } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 import { logoutUser } from "../redux/authSlice";
@@ -47,7 +12,6 @@ const Navbar = () => {
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const dispatch = useDispatch();
-
 
   useEffect(() => {
     const handleScroll = () => {
@@ -64,7 +28,7 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  const handlelogoutUser = () => {
+  const handleLogoutUser = () => {
     dispatch(logoutUser());
   };
 
@@ -123,6 +87,18 @@ const Navbar = () => {
             >
               Contact
             </NavLink>
+            {isAuthenticated && (
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `hover:text-[#FFC436] transition-colors ${
+                    isActive ? "text-[#FFC436]" : ""
+                  }`
+                }
+              >
+                Profile
+              </NavLink>
+            )}
             {isAuthenticated && user?.roles === "Admin" && (
               <NavLink
                 to="/admin"
@@ -135,18 +111,7 @@ const Navbar = () => {
                 Admin
               </NavLink>
             )}
-          </div>
-          {isAuthenticated && user?.roles === "Admin" && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                isActive ? "text-tertiary font-bold" : "hover:text-tertiary"
-              }
-            >
-              Admin Dashboard
-            </NavLink>
-          )}
-          {isAuthenticated && user?.roles === "Seller" && (
+            {isAuthenticated && user?.roles === "Seller" && (
               <NavLink
                 to="/seller"
                 className={({ isActive }) =>
@@ -158,7 +123,11 @@ const Navbar = () => {
                 Seller Panel
               </NavLink>
             )}
+          </div>
           <div className="flex items-center space-x-4">
+            {isAuthenticated && user && (
+              <span className="text-lg">Welcome, {user.username}</span>
+            )}
             {isAuthenticated ? (
               <>
                 <NavLink to="/cart" className="relative">
@@ -170,8 +139,7 @@ const Navbar = () => {
                   )}
                 </NavLink>
                 <button
-                  to="/"
-                  onClick={handlelogoutUser}
+                  onClick={handleLogoutUser}
                   className="bg-[#0174BE] text-[#FFF0CE] px-4 py-2 rounded-lg hover:bg-[#FFC436] transition-colors"
                 >
                   Logout

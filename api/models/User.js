@@ -1,43 +1,79 @@
 import mongoose from 'mongoose';
 
+const addressSchema = new mongoose.Schema({
+  street: { type: String, required: true, trim: true },
+  city: { type: String, required: true, trim: true },
+  state: { type: String, required: true, trim: true },
+  postalCode: { type: String, required: true, trim: true },
+  country: { type: String, required: true, trim: true },
+});
+
 const userSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true
-    },
-    password: {
-        type: String,
-        required: true
-    },
-    roles: {
-        type: String,
-        enum: ['Customer', 'Seller', 'Manager', 'Admin'],
-        default: 'Customer'
-    },
-    points: {
-        type: Number,
-        default: 0
-    },
-    isDeleted: {
-        type: Boolean,
-        default: false
-    },
-    pointsRank: {
-        type: String,
-        enum: ['', 'Bronze', 'Silver', 'Gold'],
-        default: ''
-    }
+  firstName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  username: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+  phoneNumber: {
+    type: String,
+    unique: true,
+    trim: true,
+    default: ''
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  roles: {
+    type: String,
+    enum: ['Customer', 'Seller', 'Manager', 'Admin'],
+    default: 'Customer'
+  },
+  points: {
+    type: Number,
+    default: 0
+  },
+  pointsRank: {
+    type: String,
+    enum: ['', 'Bronze', 'Silver', 'Gold'],
+    default: ''
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  profilePicture: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  permanentAddress: {
+    type: addressSchema,
+    required: true
+  },
+  additionalAddresses: {
+    type: [addressSchema],
+    default: []
+  }
 }, {
-    timestamps: true
+  timestamps: true
 });
 
 const User = mongoose.model('User', userSchema);

@@ -4,7 +4,7 @@ import { loginUser, clearError } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const { loading, error } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,12 +29,12 @@ const Login = () => {
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-fourth mb-2" htmlFor="username">Username</label>
+            <label className="block text-fourth mb-2" htmlFor="identifier">Email or Phone</label>
             <input
               type="text"
-              name="username"
-              id="username"
-              value={formData.username}
+              name="identifier"
+              id="identifier"
+              value={formData.identifier}
               onChange={handleChange}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-tertiary"
               required

@@ -7,11 +7,13 @@ import AdminLayout from "./layouts/AdminLayout";
 import SellerLayout from "./layouts/SellerLayout";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
+import Profile from "./pages/Profile/Profile";
 import NotFound from "./components/NotFound";
 import Home from "./pages/Home/Home";
 import Products from "./pages/Products/Products";
 import Product from "./pages/Products/Product";
 import Cart from "./pages/Products/Cart";
+import Order from "./pages/Products/Order";
 import { fetchCurrentUser } from "./redux/authSlice";
 import GlobalLoading from "./components/GlobalLoading";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,6 +25,7 @@ import AddBanner from "./Admin/Forms/AddBanner";
 import DataTable from "./Admin/constants/DataTable";
 import UserForm from "./Admin/Forms/UserForm";
 import EditForm from "./Admin/constants/EditForm";
+import EditProfile from "./pages/Profile/EditProfile"
 import SellerAddProducts from "./Seller/Forms/AddProducts";
 import SellerDataTable from "./Seller/constants/Datatable";
 import SellerEditForm from "./Seller/constants/EditForms";
@@ -46,10 +49,13 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/not-found" element={<NotFound />} />
         <Route path="/products/:id" element={<Product />} />
         <Route path="/products" element={<Products />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/order" element={<Order />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
       </Route>
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>

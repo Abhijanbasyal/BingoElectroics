@@ -107,7 +107,7 @@ const AdminPanel = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
             >
-              CompanyName
+              BingoElectronics
             </motion.h1>
             {!isLargeScreen && (
               <motion.button
@@ -264,7 +264,7 @@ const AdminPanel = () => {
                 >
                   <motion.div variants={dropdownItemVariants}>
                     <NavLink
-                      to="/admin/profile"
+                      to="/profile"
                       className="flex items-center px-4 py-2 text-fourth hover:bg-primary/50 transition-colors duration-200"
                       onClick={() => setIsDropdownOpen(false)}
                     >

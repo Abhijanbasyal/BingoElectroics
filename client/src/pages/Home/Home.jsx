@@ -83,7 +83,7 @@ const Home = () => {
           autoplay={{ delay: 3000 }}
           navigation
           pagination={{ clickable: true }}
-          className="w-full h-[400px]"
+          className="w-full h-[650px]"
         >
           {banners.length > 0 ? (
             banners.map((banner, index) => (
@@ -99,7 +99,7 @@ const Home = () => {
 
       {/* Category Sections - Visible to everyone */}
       {categories.length > 0 ? (
-        categories.slice(0, 2).map((category, index) => (
+        categories.slice(0, 6).map((category, index) => (
           <section key={category._id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
             <h2 className="text-2xl font-bold text-[#0C356A] mb-6">{category.title}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

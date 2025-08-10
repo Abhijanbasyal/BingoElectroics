@@ -4,18 +4,26 @@ import { signupUser, clearError } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({ username: '', email: '', password: '', roles: 'Customer' });
+  const [formData, setFormData] = useState({ 
+    firstName: '',
+    lastName: '',
+    username: '', 
+    email: '', 
+    phoneNumber: '',
+    password: '', 
+    roles: 'Customer' 
+  });
   const { loading, error } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    dispatch(clearError());
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    dispatch(clearError());
     const result = await dispatch(signupUser(formData));
     if (signupUser.fulfilled.match(result)) {
       navigate('/');
@@ -28,6 +36,30 @@ const Signup = () => {
         <h2 className="text-2xl font-bold text-fourth mb-6 text-center">Sign Up</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-fourth mb-2" htmlFor="firstName">First Name</label>
+            <input
+              type="text"
+              name="firstName"
+              id="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-tertiary"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-fourth mb-2" htmlFor="lastName">Last Name</label>
+            <input
+              type="text"
+              name="lastName"
+              id="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-tertiary"
+              required
+            />
+          </div>
           <div className="mb-4">
             <label className="block text-fourth mb-2" htmlFor="username">Username</label>
             <input
@@ -50,6 +82,17 @@ const Signup = () => {
               onChange={handleChange}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-tertiary"
               required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-fourth mb-2" htmlFor="phoneNumber">Phone Number (optional)</label>
+            <input
+              type="tel"
+              name="phoneNumber"
+              id="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-tertiary"
             />
           </div>
           <div className="mb-4">

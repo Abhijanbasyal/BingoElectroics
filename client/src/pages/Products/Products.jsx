@@ -24,25 +24,32 @@ const Products = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch categories
         const categoriesRes = await axios.get('/api/categories');
-        const validCategories = categoriesRes.data.slice(0, 6);
+        const validCategories = categoriesRes.data?.slice(0, 6) || [];
         if (!validCategories.length) {
           toast.error('No categories found');
+          setCategories([]);
           return;
         }
         setCategories(validCategories);
 
+        // Fetch featured products
         const featuredRes = await axios.get('/api/products/featured?limit=5');
         const featuredData = featuredRes.data || [];
         setFeaturedProducts(featuredData);
 
+        // Fetch products for each category
         const productsPromises = validCategories.map((cat) =>
           axios.get(`/api/products?categoryId=${cat._id}&limit=10`)
         );
         const productsResponses = await Promise.all(productsPromises);
-        const allProducts = productsResponses.flatMap((res) => res.data || []);
+        const allProducts = productsResponses
+          .flatMap((res) => res.data || [])
+          .filter((product) => product && product._id); // Ensure valid products
         if (!allProducts.length) {
           toast.error('No products found');
+          setProducts([]);
           return;
         }
         setProducts(allProducts);
@@ -51,7 +58,8 @@ const Products = () => {
         console.log('Fetched featured products:', featuredData);
         console.log('Fetched products:', allProducts);
       } catch (err) {
-        toast.error(`Failed to load data: ${err.response?.data?.message || err.message}`);
+        const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+        toast.error(`Failed to load data: ${errorMessage}`);
         console.error('Fetch error:', err);
       }
     };
@@ -71,13 +79,23 @@ const Products = () => {
         productId: product._id,
         title: product.title,
         price: product.price,
-        image: product.images[0] || 'https://via.placeholder.com/150',
+        image: product.images?.[0] || 'https://via.placeholder.com/150',
       })
     );
-    axios.put(`/api/products/${product._id}/bought`, {}, {
-      withCredentials: true,
-      headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
-    }).catch(err => console.error('Failed to update bought count:', err));
+
+    axios
+      .put(
+        `/api/products/${product._id}/bought`,
+        {},
+        {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+        }
+      )
+      .catch((err) => {
+        console.error('Failed to update bought count:', err);
+        toast.error(`Failed to update bought count: ${err.response?.data?.message || err.message}`);
+      });
 
     toast.success(`${product.title} added to cart!`);
   };
@@ -98,44 +116,42 @@ const Products = () => {
 
   const applyFilters = async (search, category) => {
     try {
+      let filteredProducts = [];
       if (category) {
         const res = await axios.get(`/api/products?categoryId=${category}&limit=10`);
-        let filteredProducts = res.data || [];
-        if (search) {
-          filteredProducts = filteredProducts.filter((product) =>
-            product.title.toLowerCase().includes(search.toLowerCase())
-          );
-        }
-        setProducts(filteredProducts);
+        filteredProducts = res.data || [];
       } else {
         const productsPromises = categories.map((cat) =>
           axios.get(`/api/products?categoryId=${cat._id}&limit=10`)
         );
         const productsResponses = await Promise.all(productsPromises);
-        let allProducts = productsResponses.flatMap((res) => res.data || []);
-        if (search) {
-          allProducts = allProducts.filter((product) =>
-            product.title.toLowerCase().includes(search.toLowerCase())
-          );
-        }
-        setProducts(allProducts);
+        filteredProducts = productsResponses.flatMap((res) => res.data || []);
       }
+
+      if (search) {
+        filteredProducts = filteredProducts.filter((product) =>
+          product.title?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      setProducts(filteredProducts);
     } catch (err) {
-      toast.error(`Failed to apply filters: ${err.response?.data?.message || err.message}`);
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      toast.error(`Failed to apply filters: ${errorMessage}`);
       console.error('Filter error:', err);
     }
   };
 
   const bannerSettings = {
     dots: true,
-    infinite: true,
+    infinite: featuredProducts.length > 3,
     speed: 500,
-    slidesToShow: 3,
+    slidesToShow: Math.min(featuredProducts.length, 3),
     slidesToScroll: 1,
-    autoplay: true,
+    autoplay: featuredProducts.length > 3,
     autoplaySpeed: 3000,
     responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
+      { breakpoint: 1024, settings: { slidesToShow: Math.min(featuredProducts.length, 2) } },
       { breakpoint: 600, settings: { slidesToShow: 1 } },
     ],
   };
@@ -170,7 +186,11 @@ const Products = () => {
           <Slider {...bannerSettings}>
             {featuredProducts.map((product) => (
               <div key={product._id} className="p-2">
-                <ProductCard product={product} />
+                <ProductCard
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onViewProduct={handleViewProduct}
+                />
               </div>
             ))}
           </Slider>
@@ -179,20 +199,29 @@ const Products = () => {
 
       <div className="space-y-12">
         {categories.length > 0 ? (
-          categories.map((category) => (
-            <div key={category._id}>
-              <h2 className="text-2xl font-semibold text-tertiary mb-4">{category.title}</h2>
-              <Slider {...settings}>
-                {products
-                  .filter((product) => product.category._id === category._id)
-                  .map((product) => (
-                    <div key={product._id} className="p-2">
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-              </Slider>
-            </div>
-          ))
+          categories.map((category) => {
+            const categoryProducts = products.filter(
+              (product) => product.category?._id === category._id || product.category === category._id
+            );
+            return (
+              categoryProducts.length > 0 && (
+                <div key={category._id}>
+                  <h2 className="text-2xl font-semibold text-tertiary mb-4">{category.title}</h2>
+                  <Slider {...settings}>
+                    {categoryProducts.map((product) => (
+                      <div key={product._id} className="p-2">
+                        <ProductCard
+                          product={product}
+                          onAddToCart={handleAddToCart}
+                          onViewProduct={handleViewProduct}
+                        />
+                      </div>
+                    ))}
+                  </Slider>
+                </div>
+              )
+            );
+          })
         ) : (
           <div className="text-center text-fourth">Loading categories...</div>
         )}

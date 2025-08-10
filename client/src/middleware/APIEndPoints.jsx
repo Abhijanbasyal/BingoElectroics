@@ -1,5 +1,3 @@
-
-
 const serverDomain = process.env.REACT_APP_SERVER_DOMAIN;
 
 const APIEndPoints = {
@@ -18,6 +16,10 @@ const APIEndPoints = {
   currentUser: {
     url: `${serverDomain}/auth/current-user`,
     method: "get",
+  },
+  updateProfile: {
+    url: `${serverDomain}/auth/edit-profile`,
+    method: "put",
   },
   Add_category: {
     url: `${serverDomain}/categories`,
@@ -44,11 +46,11 @@ const APIEndPoints = {
     method: "get",
   },
   Restore_user: {
-    url: `${serverDomain}/auth/users`,
+    url: `${serverDomain}/auth/users`, // Base URL, append /:id/restore
     method: "put",
   },
   Permanent_delete_user: {
-    url: `${serverDomain}/auth/users`, 
+    url: `${serverDomain}/auth/users`, // Base URL, append /:id/permanent
     method: "delete",
   },
   Get_deleted_categories: {
@@ -75,15 +77,42 @@ const APIEndPoints = {
     url: `${serverDomain}/products`, // Base URL, append /:id/permanent
     method: "delete",
   },
-  Upload_banner: { url: `${serverDomain}/banners/upload`, method: "post" },
-  Get_banners: { url: `${serverDomain}/banners`, method: "get" },
-  Get_deleted_banners: { url: `${serverDomain}/banners/deleted`, method: "get" },
-  Restore_banner: { url: `${serverDomain}/banners`, method: "put" },
-  Permanent_delete_banner: { url: `${serverDomain}/banners`, method: "delete" },
-  Get_cart: { url: `${serverDomain}/cart`, method: "get" }, // Base URL, append /:userId
-  Add_to_cart: { url: `${serverDomain}/cart`, method: "post" },
-  Remove_from_cart: { url: `${serverDomain}/cart`, method: "delete" }, // Base URL, append /:userId/:productId
-  Update_cart: { url: `${serverDomain}/cart`, method: "put" },
+  Upload_banner: {
+    url: `${serverDomain}/banners/upload`,
+    method: "post",
+  },
+  Get_banners: {
+    url: `${serverDomain}/banners`,
+    method: "get",
+  },
+  Get_deleted_banners: {
+    url: `${serverDomain}/banners/deleted`,
+    method: "get",
+  },
+  Restore_banner: {
+    url: `${serverDomain}/banners`, // Base URL, append /:id/restore
+    method: "put",
+  },
+  Permanent_delete_banner: {
+    url: `${serverDomain}/banners`, // Base URL, append /:id/permanent
+    method: "delete",
+  },
+  Get_cart: {
+    url: `${serverDomain}/cart`, // Base URL, append /:userId
+    method: "get",
+  },
+  Add_to_cart: {
+    url: `${serverDomain}/cart`,
+    method: "post",
+  },
+  Remove_from_cart: {
+    url: `${serverDomain}/cart`, // Base URL, append /:userId/:productId
+    method: "delete",
+  },
+  Update_cart: {
+    url: `${serverDomain}/cart`,
+    method: "put",
+  },
 };
 
 export default APIEndPoints;

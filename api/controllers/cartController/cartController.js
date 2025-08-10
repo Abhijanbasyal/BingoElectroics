@@ -8,12 +8,16 @@ import Cart from '../../models/cart/cart.js';
   export const getCart = async (req, res, next) => {
     try {
       console.log('Fetching cart for userId:', req.params.userId);
-      const cart = await Cart.findOne({ userId: req.params.userId }).populate('products.productId', 'title price images');
+      const cart = await Cart.findOne({ userId: req.params.userId }).populate('products.productId', 'title price images productQuantity');
       if (!cart) {
         console.log('No cart found, returning empty cart');
         return res.status(200).json({ success: true, cart: { products: [] } });
       }
-      console.log('Cart found:', cart);
+      console.log('Cart found with products:', cart.products.map(p => ({
+        productId: p.productId?._id,
+        productQuantity: p.productId?.productQuantity,
+        rawProduct: p.productId
+      })));
       res.status(200).json({ success: true, cart });
     } catch (error) {
       console.error('Get cart error at', new Date().toISOString(), ':', error);
@@ -25,7 +29,6 @@ import Cart from '../../models/cart/cart.js';
     try {
       const { userId, productId, title, price, image } = req.body;
 
-      // Validate userId and productId as ObjectId
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         throw errorHandler(400, 'Invalid userId');
       }
@@ -33,7 +36,6 @@ import Cart from '../../models/cart/cart.js';
         throw errorHandler(400, 'Invalid productId');
       }
 
-      // Validate other fields
       if (!title || !price || !image) {
         throw errorHandler(400, 'Missing required fields: title, price, or image');
       }
@@ -65,15 +67,24 @@ import Cart from '../../models/cart/cart.js';
 
   export const removeFromCart = async (req, res, next) => {
     try {
+      console.log('Removing from cart:', { userId: req.params.userId, productId: req.params.productId });
       const { userId, productId } = req.params;
       const cart = await Cart.findOne({ userId });
       if (!cart) return next(errorHandler(404, 'Cart not found'));
 
+      const initialProductCount = cart.products.length;
       cart.products = cart.products.filter(p => p.productId.toString() !== productId);
+      if (cart.products.length === initialProductCount) {
+        console.log('No product removed, productId not found:', productId);
+        return next(errorHandler(404, 'Product not found in cart'));
+      }
+
       cart.modifiedDate = new Date();
       await cart.save();
+      console.log('Cart after removal:', cart.products.length, 'products remaining');
       res.status(200).json({ success: true, cart });
     } catch (error) {
+      console.error('Remove from cart error at', new Date().toISOString(), ':', error);
       next(error);
     }
   };
