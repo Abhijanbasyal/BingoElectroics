@@ -24,7 +24,7 @@ import {
   submenuItemVariants,
 } from "../../Vairants/export";
 
-const AdminPanel = () => {
+const ManagerPanel = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -38,39 +38,39 @@ const AdminPanel = () => {
   }, []);
 
   const menuItems = [
-    { name: "Dashboard", icon: Home, path: "/admin" },
+    { name: "Dashboard", icon: Home, path: "/manager" },
     {
       name: "Management",
       icon: Settings,
       subItems: [
-        { name: "Users", path: "/admin/management/users" },
-        { name: "Categories", path: "/admin/management/categories" },
-        { name: "Products", path: "/admin/management/products" },
-        { name: "Banners", path: "/admin/management/banners" },
+        { name: "Users", path: "/manager/management/users" },
+        { name: "Categories", path: "/manager/management/categories" },
+        { name: "Products", path: "/manager/management/products" },
+        { name: "Banners", path: "/manager/management/banners" },
       ],
     },
     {
       name: "Form",
       icon: Folder,
       subItems: [
-        { name: "Category", path: "/admin/form/category" },
-        { name: "Product", path: "/admin/form/product" },
-        { name: "User", path: "/admin/form/user" },
-        { name: "Banner", path: "/admin/form/banner" },
+        { name: "Category", path: "/manager/form/category" },
+        { name: "Product", path: "/manager/form/product" },
+        { name: "User", path: "/manager/form/user" },
+        { name: "Banner", path: "/manager/form/banner" },
       ],
     },
     {
       name: "RecycleBin",
       icon: Trash,
       subItems: [
-        { name: "User RecycleBin", path: "/admin/recycle-bin/users" },
-        { name: "Category RecycleBin", path: "/admin/recycle-bin/categories" },
-        { name: "Product RecycleBin", path: "/admin/recycle-bin/products" },
-        { name: "Banner RecycleBin", path: "/admin/recycle-bin/banners" },
+        { name: "User RecycleBin", path: "/manager/recycle-bin/users" },
+        { name: "Category RecycleBin", path: "/manager/recycle-bin/categories" },
+        { name: "Product RecycleBin", path: "/manager/recycle-bin/products" },
+        { name: "Banner RecycleBin", path: "/manager/recycle-bin/banners" },
       ],
     },
-    { name: "Profile", icon: User, path: "/admin/profile" },
-    { name: "LogOut", icon: LogOut, path: "/admin/logout" },
+    { name: "Profile", icon: User, path: "/manager/profile" },
+    { name: "LogOut", icon: LogOut, path: "/manager/logout" },
   ];
 
   const validTypes = ['users', 'categories', 'products', 'banners'];
@@ -92,7 +92,7 @@ const AdminPanel = () => {
   };
 
   if (!isValidRoute()) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/manager" replace />;
   }
 
   return (
@@ -280,7 +280,7 @@ const AdminPanel = () => {
                 >
                   <motion.div variants={dropdownItemVariants}>
                     <NavLink
-                      to="/admin/profile"
+                      to="/manager/profile"
                       className="flex items-center px-4 py-2 text-fourth hover:bg-primary/50 transition-colors duration-200"
                       onClick={() => setIsDropdownOpen(false)}
                     >
@@ -290,7 +290,7 @@ const AdminPanel = () => {
                   </motion.div>
                   <motion.div variants={dropdownItemVariants}>
                     <NavLink
-                      to="/admin/logout"
+                      to="/manager/logout"
                       className="flex items-center px-4 py-2 text-fourth hover:bg-primary/50 transition-colors duration-200"
                       onClick={() => setIsDropdownOpen(false)}
                     >
@@ -317,4 +317,4 @@ const AdminPanel = () => {
   );
 };
 
-export default AdminPanel;
+export default ManagerPanel;

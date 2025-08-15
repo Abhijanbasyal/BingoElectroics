@@ -1,22 +1,19 @@
-import { Outlet } from "react-router-dom";
 import Header from "../components/Header";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import AuthInitializer from "../components/AuthInitializer";
-console.log("user layout");
-const UserLayout = () => {
+import ManagerPanel from "../Manager/ManagerPanel/ManagerPanel";
+
+const ManagerLayout = () => {
   return (
-    
     <div className="flex flex-col min-h-screen bg-primary">
       <AuthInitializer />
       <Header />
       <Navbar />
-      <main className="flex-1 container mx-auto p-4">
-        <Outlet />
-      </main>
+      <ManagerPanel/>
       <Footer />
     </div>
   );
 };
 
-export default UserLayout;
+export default ManagerLayout;

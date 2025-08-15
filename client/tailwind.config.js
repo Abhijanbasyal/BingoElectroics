@@ -5,6 +5,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        tablet: '800px', // Custom breakpoint for ≥800px
+      },
       colors: {
         primary: '#FFF0CE',
         secondary: '#FFC436',

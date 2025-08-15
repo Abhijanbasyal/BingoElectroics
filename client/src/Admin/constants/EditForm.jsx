@@ -1,367 +1,667 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
-import { AlertCircle, CheckCircle, X } from "lucide-react";
-import { getFormConfig } from "../utils/manageForm";
-import Loading from "../../components/LoadingComponent";
-import APIEndPoints from "../../middleware/APIEndPoints";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast, Toaster } from 'react-hot-toast';
+import { fetchCurrentUser } from '../../redux/authSlice';
+import { User, MapPin, Camera, Plus, Trash2, AlertCircle, CheckCircle, Mail, Phone, Award } from 'lucide-react';
+import Loading from '../../components/LoadingComponent';
+import getTableConfig from '../utils/tableConfig';
+import APIEndPoints from '../../middleware/APIEndPoints';
 
 const EditForm = () => {
-  const { type, id } = useParams();
+  const { type: paramType, id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user, loading: authLoading } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({});
-  const [currentImages, setCurrentImages] = useState([]); // Array of image URLs
-  const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [categories, setCategories] = useState([]);
-  const [config, setConfig] = useState(getFormConfig(type, id));
+  const [targetUserRole, setTargetUserRole] = useState(null);
+  const userRole = user?.roles || 'Admin';
 
-  const cloudinaryPresets = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
-  const cloudinaryName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+  const type = paramType === 'user' ? 'users' : paramType === 'category' ? 'categories' : paramType === 'banner' ? 'banners' : paramType;
+  const tableConfig = useMemo(() => getTableConfig(userRole), [userRole]);
+  const validTypes = Object.keys(tableConfig);
+  const config = tableConfig[type];
 
-  // Fetch data and categories
   useEffect(() => {
+    if (!validTypes.includes(type) || !id) {
+      setError('Invalid type or ID');
+      toast.error('Invalid type or ID');
+      navigate(userRole === 'Manager' ? '/manager' : '/admin');
+      return;
+    }
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch item data
-        const response = await axios.get(config.endpoint, { withCredentials: true });
-        const dataKey = type === "user" ? "user" : type.slice(0, -1);
-        setFormData(response.data[dataKey] || response.data);
+        const baseUrl = APIEndPoints.baseUrl || 'http://localhost:8000';
+        const endpoint = `${baseUrl}${config.endpoint}/${id}`;
+        console.log(`Fetching data from: ${endpoint}`);
+        const response = await axios.get(endpoint, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          withCredentials: true,
+        });
 
-        // Set images for products
-        if (type === "product" && response.data.product?.images) {
-          const images = response.data.product.images;
-          setCurrentImages(images);
-          setImagePreviews(images);
+        const data = response.data[type] || response.data[type.slice(0, -1)] || response.data;
+        if (!data) {
+          throw new Error('Invalid data received');
         }
 
-        // Fetch categories for product form
-        if (type === "product") {
-          const catResponse = await axios.get(APIEndPoints.Get_categories.url, {
+        if (type === 'users') {
+          setTargetUserRole(data.roles);
+        }
+
+        setFormData({
+          ...data,
+          images: type === 'products' ? (Array.isArray(data.images) ? data.images : [data.images].filter(Boolean)) : data.images || [],
+          image: type === 'banners' ? (Array.isArray(data.image) ? data.image[0] : data.image) : data.image,
+          permanentAddress: data.permanentAddress || { street: '', city: '', state: '', postalCode: '', country: '' },
+          additionalAddresses: data.additionalAddresses || [],
+        });
+        setError('');
+        setSuccess('');
+
+        if (type === 'products') {
+          const categoriesResponse = await axios.get(`${baseUrl}/api/categories`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             withCredentials: true,
           });
-          setCategories(catResponse.data.categories || []);
-
-          // Update config with category options
-          setConfig({
-            ...config,
-            fields: config.fields.map((field) =>
-              field.name === "category"
-                ? {
-                    ...field,
-                    options: catResponse.data.categories.map((cat) => ({
-                      value: cat._id,
-                      label: cat.title,
-                    })),
-                  }
-                : field
-            ),
-          });
+          setCategories(categoriesResponse.data.categories || []);
         }
       } catch (err) {
-        setError("Failed to fetch data");
-        toast.error("Failed to fetch data");
+        console.error(`Fetch ${type} error:`, err);
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          try {
+            await dispatch(fetchCurrentUser()).unwrap();
+            const baseUrl = APIEndPoints.baseUrl || 'http://localhost:8000';
+            const retryResponse = await axios.get(`${baseUrl}${config.endpoint}/${id}`, {
+              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+              withCredentials: true,
+            });
+            const data = retryResponse.data[type] || retryResponse.data[type.slice(0, -1)] || retryResponse.data;
+            if (type === 'users') {
+              setTargetUserRole(data.roles);
+            }
+            setFormData({
+              ...data,
+              images: type === 'products' ? (Array.isArray(data.images) ? data.images : [data.images].filter(Boolean)) : data.images || [],
+              image: type === 'banners' ? (Array.isArray(data.image) ? data.image[0] : data.image) : data.image,
+              permanentAddress: data.permanentAddress || { street: '', city: '', state: '', postalCode: '', country: '' },
+              additionalAddresses: data.additionalAddresses || [],
+            });
+            setError('');
+            if (type === 'products') {
+              const categoriesResponse = await axios.get(`${baseUrl}/api/categories`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true,
+              });
+              setCategories(categoriesResponse.data.categories || []);
+            }
+          } catch (retryErr) {
+            setError('Session expired. Please log in again.');
+            toast.error('Session expired. Please log in again.');
+            navigate('/login');
+          }
+        } else {
+          setError(err.response?.data?.message || `Failed to fetch ${type}. Please try again.`);
+          toast.error(err.response?.data?.message || `Failed to fetch ${type}. Please try again.`);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (config.endpoint) fetchData();
-  }, [config.endpoint, type, id]);
+    fetchData();
+  }, [paramType, id, navigate, dispatch, userRole, config, type]);
 
-  // Handle form changes
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "images" && files.length > 0) {
-      handleImageUpload(files);
+    const { name, value, type: inputType, files } = e.target;
+    if (inputType === 'file') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === 'products' ? Array.from(files) : files[0],
+      }));
+    } else if (name.includes('permanentAddress.')) {
+      const field = name.split('.')[1];
+      setFormData((prev) => ({
+        ...prev,
+        permanentAddress: { ...prev.permanentAddress, [field]: value },
+      }));
+    } else if (name.includes('additionalAddresses.')) {
+      const [index, field] = name.split('.')[1].split('_');
+      setFormData((prev) => ({
+        ...prev,
+        additionalAddresses: prev.additionalAddresses.map((addr, i) =>
+          i === parseInt(index) ? { ...addr, [field]: value } : addr
+        ),
+      }));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    setError("");
+    setError('');
+    setSuccess('');
   };
 
-  // Handle image upload to Cloudinary
-  const handleImageUpload = async (files) => {
-    const fileArray = Array.from(files);
-    if (fileArray.length + currentImages.length > 5) {
-      toast.error("You can upload a maximum of 5 images");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const uploadedUrls = await Promise.all(
-        fileArray.map(async (file) => {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("upload_preset", cloudinaryPresets);
-
-          const response = await axios.post(
-            `https://api.cloudinary.com/v1_1/${cloudinaryName}/image/upload`,
-            formData
-          );
-          return response.data.secure_url;
-        })
-      );
-      setCurrentImages((prev) => [...prev, ...uploadedUrls]);
-      setImagePreviews((prev) => [...prev, ...uploadedUrls]);
-      toast.success("Images uploaded successfully!");
-    } catch (err) {
-      toast.error("Failed to upload images");
-    } finally {
-      setUploading(false);
-    }
+  const addAdditionalAddress = () => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalAddresses: [...(prev.additionalAddresses || []), { street: '', city: '', state: '', postalCode: '', country: '' }],
+    }));
+    toast.success('Additional address added');
   };
 
-  // Remove image
-  const removeImage = (index) => {
-    setCurrentImages((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    toast.success("Image removed");
+  const removeAdditionalAddress = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalAddresses: prev.additionalAddresses.filter((_, i) => i !== index),
+    }));
+    toast.success('Address removed');
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-    setSubmitLoading(true);
+    setError('');
+    setSuccess('');
 
     // Validate required fields
-    for (const field of config.fields) {
-      if (
-        field.required &&
-        !formData[field.name] &&
-        field.type !== "file" &&
-        !(field.name === "password" && !formData[field.name])
-      ) {
-        setError(`${field.label} is required`);
-        toast.error(`${field.label} is required`);
-        setSubmitLoading(false);
+    if (type === 'users') {
+      if (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.username?.trim()) {
+        setError('First name, last name, and username are required');
+        toast.error('Please fill all required fields');
+        return;
+      }
+      if (userRole === 'Admin') {
+        if (!formData.email?.trim()) {
+          setError('Email is required');
+          toast.error('Email is required');
+          return;
+        }
+        if (formData.permanentAddress && (
+          !formData.permanentAddress.street?.trim() ||
+          !formData.permanentAddress.city?.trim() ||
+          !formData.permanentAddress.state?.trim() ||
+          !formData.permanentAddress.postalCode?.trim() ||
+          !formData.permanentAddress.country?.trim()
+        )) {
+          setError('All permanent address fields are required');
+          toast.error('Please fill all permanent address fields');
+          return;
+        }
+        for (let i = 0; i < (formData.additionalAddresses || []).length; i++) {
+          const addr = formData.additionalAddresses[i];
+          if (!addr.street?.trim() || !addr.city?.trim() || !addr.state?.trim() ||
+              !addr.postalCode?.trim() || !addr.country?.trim()) {
+            setError(`All fields in additional address ${i + 1} are required`);
+            toast.error(`Please fill all fields in additional address ${i + 1}`);
+            return;
+          }
+        }
+      }
+    } else if (type === 'categories') {
+      if (!formData.name?.trim()) {
+        setError('Category name is required');
+        toast.error('Category name is required');
         return;
       }
     }
 
-    try {
-      // Build submit data, skipping empty password and overriding images
-      const submitData = {};
-      Object.entries(formData).forEach(([key, value]) => {
-        if (!(key === "password" && !value)) {
-          submitData[key] = value;
-        }
-      });
-
-      // Override images for products
-      if (type === "product") {
-        submitData.images = currentImages;
-        submitData.price = parseFloat(submitData.price) || 0;
-        submitData.loyaltyPoints = parseInt(submitData.loyaltyPoints) || 0;
-        submitData.productQuantity = parseInt(submitData.productQuantity) || 0;
+    const formDataToSend = new FormData();
+    Object.keys(formData).forEach((key) => {
+      if (key === 'images' && type === 'products') {
+        formData.images.forEach((file, index) => {
+          formDataToSend.append(`images[${index}]`, file);
+        });
+      } else if (key === 'image' && type === 'banners') {
+        formDataToSend.append('image', formData.image);
+      } else if (key === 'permanentAddress') {
+        Object.keys(formData.permanentAddress).forEach((subKey) => {
+          formDataToSend.append(`permanentAddress[${subKey}]`, formData.permanentAddress[subKey] || '');
+        });
+      } else if (key === 'additionalAddresses') {
+        formData.additionalAddresses.forEach((addr, index) => {
+          Object.keys(addr).forEach((subKey) => {
+            formDataToSend.append(`additionalAddresses[${index}][${subKey}]`, addr[subKey] || '');
+          });
+        });
+      } else {
+        formDataToSend.append(key, formData[key] || '');
       }
+    });
 
-      await axios.put(config.updateEndpoint, submitData, {
+    try {
+      const baseUrl = APIEndPoints.baseUrl || 'http://localhost:8000';
+      const response = await axios.put(`${baseUrl}${config.endpoint}/${id}`, formDataToSend, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data',
+        },
         withCredentials: true,
       });
 
-      setSuccess(`${type.slice(0, -1)} updated successfully!`);
-      toast.success(`${type.slice(0, -1)} updated successfully!`);
-      setTimeout(() => navigate(`/admin/management/${type}`), 2000);
+      setSuccess(`${type.slice(0, -1)} updated successfully`);
+      toast.success(`${type.slice(0, -1)} updated successfully`);
+      setTimeout(() => navigate(config.editPath.split('/edit')[0]), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || `Failed to update ${type.slice(0, -1)}`);
-      toast.error(err.response?.data?.message || `Failed to update ${type.slice(0, -1)}`);
-    } finally {
-      setSubmitLoading(false);
+      console.error(`Update ${type} error:`, {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        try {
+          await dispatch(fetchCurrentUser()).unwrap();
+          const retryFormData = new FormData();
+          Object.keys(formData).forEach((key) => {
+            if (key === 'images' && type === 'products') {
+              formData.images.forEach((file, index) => {
+                retryFormData.append(`images[${index}]`, file);
+              });
+            } else if (key === 'image' && type === 'banners') {
+              retryFormData.append('image', formData.image);
+            } else if (key === 'permanentAddress') {
+              Object.keys(formData.permanentAddress).forEach((subKey) => {
+                retryFormData.append(`permanentAddress[${subKey}]`, formData.permanentAddress[subKey] || '');
+              });
+            } else if (key === 'additionalAddresses') {
+              formData.additionalAddresses.forEach((addr, index) => {
+                Object.keys(addr).forEach((subKey) => {
+                  retryFormData.append(`additionalAddresses[${index}][${subKey}]`, addr[subKey] || '');
+                });
+              });
+            } else {
+              retryFormData.append(key, formData[key] || '');
+            }
+          });
+          const baseUrl = APIEndPoints.baseUrl || 'http://localhost:8000';
+          await axios.put(`${baseUrl}${config.endpoint}/${id}`, retryFormData, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'multipart/form-data',
+            },
+            withCredentials: true,
+          });
+          setSuccess(`${type.slice(0, -1)} updated successfully`);
+          toast.success(`${type.slice(0, -1)} updated successfully`);
+          setTimeout(() => navigate(config.editPath.split('/edit')[0]), 2000);
+        } catch (retryErr) {
+          setError('Session expired. Please log in again.');
+          toast.error('Session expired. Please log in again.');
+          navigate('/login');
+        }
+      } else {
+        const errorMessage = err.response?.data?.message || `Failed to update ${type}. Please try again later.`;
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading || authLoading) return <Loading />;
 
-  return (
-    <div className="min-h-screen bg-[#FFF0CE] p-6">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#0C356A',
-            color: '#FFF0CE',
-            border: '1px solid #0174BE',
-          },
-        }}
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden"
-      >
-        {/* Header */}
-        <div className="bg-[#0C356A] p-6">
-          <h2 className="text-2xl font-bold text-[#FFF0CE]">{config.title}</h2>
-          <p className="text-[#FFC436]">Edit the details below</p>
-        </div>
+  if (error || !config) {
+    return (
+      <div className="min-h-screen bg-[#FFF0CE] p-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded flex items-center"
+        >
+          <AlertCircle size={20} className="mr-2" />
+          {error || 'Invalid type'}
+        </motion.div>
+      </div>
+    );
+  }
 
-        {/* Body */}
-        <div className="p-6">
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded"
-            >
-              <div className="flex items-center">
-                <AlertCircle className="mr-2" />
-                <span>{error}</span>
-              </div>
-            </motion.div>
-          )}
+  if (userRole === 'Manager' && type === 'users' && ['Admin', 'Manager'].includes(targetUserRole)) {
+    return (
+      <div className="min-h-screen bg-[#FFF0CE] p-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded flex items-center"
+        >
+          <AlertCircle size={20} className="mr-2" />
+          Managers cannot edit Admin or Manager profiles
+        </motion.div>
+      </div>
+    );
+  }
 
-          {success && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded"
-            >
-              <div className="flex items-center">
-                <CheckCircle className="mr-2" />
-                <span>{success}</span>
-              </div>
-            </motion.div>
-          )}
+  const renderInput = (key, label, type = 'text', options = null, required = false) => {
+    if (type === 'textarea') {
+      return (
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-4"
+        >
+          <label className="block text-[#0C356A] font-medium mb-2 flex items-center">
+            <User size={18} className="mr-2" /> {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <textarea
+            name={key}
+            value={formData[key] || ''}
+            onChange={handleChange}
+            className="w-full p-3 border border-[#0174BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0174BE] bg-white"
+            disabled={userRole === 'Manager' && ['email', 'phoneNumber', 'points'].includes(key)}
+            required={required}
+          />
+        </motion.div>
+      );
+    }
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {config.fields?.map((field) => (
-                <div
-                  key={field.name}
-                  className={field.type === "textarea" || field.type === "file" ? "md:col-span-2" : ""}
-                >
-                  <label className="block text-sm font-medium text-[#0C356A] mb-1">
-                    {field.label}
-                    {field.required && <span className="text-red-500"> *</span>}
-                  </label>
+    if (type === 'select') {
+      return (
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-4"
+        >
+          <label className="block text-[#0C356A] font-medium mb-2 flex items-center">
+            <User size={18} className="mr-2" /> {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <select
+            name={key}
+            value={formData[key] || ''}
+            onChange={handleChange}
+            className="w-full p-3 border border-[#0174BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0174BE] bg-white"
+            disabled={userRole === 'Manager'}
+            required={required}
+          >
+            <option value="">Select {label}</option>
+            {options?.map((option) => (
+              <option key={option._id} value={option._id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </motion.div>
+      );
+    }
 
-                  {field.type === "textarea" ? (
-                    <textarea
-                      id={field.name}
-                      name={field.name}
-                      value={formData[field.name] || ""}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#0174BE] focus:border-transparent"
-                      placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                      disabled={loading || uploading || submitLoading}
-                      required={field.required}
-                      rows={4}
-                    />
-                  ) : field.type === "select" ? (
-                    <select
-                      id={field.name}
-                      name={field.name}
-                      value={formData[field.name] || ""}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#0174BE] focus:border-transparent"
-                      disabled={loading || uploading || submitLoading || (field.name === "category" && !categories.length)}
-                      required={field.required}
-                    >
-                      <option value="">Select {field.label}</option>
-                      {(field.options || []).map((option) => (
-                        <option key={option.value || option} value={option.value || option}>
-                          {option.label || option}
-                        </option>
-                      ))}
-                    </select>
-                  ) : field.type === "file" ? (
-                    <div>
-                      <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <p className="mb-2 text-sm text-gray-500">
-                              <span className="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p className="text-xs text-gray-500">PNG, JPG, GIF</p>
-                          </div>
-                          <input
-                            id={field.name}
-                            name={field.name}
-                            type="file"
-                            onChange={handleChange}
-                            className="hidden"
-                            disabled={loading || uploading || submitLoading}
-                            multiple={field.multiple}
-                            accept={field.accept}
-                          />
-                        </label>
-                      </div>
-
-                      {imagePreviews.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-medium text-[#0C356A] mb-2">Image Previews</h4>
-                          <div className="flex flex-wrap gap-3">
-                            {imagePreviews.map((preview, index) => (
-                              <div key={index} className="relative group">
-                                <img
-                                  src={preview}
-                                  alt={`Preview ${index}`}
-                                  className="w-24 h-24 object-cover rounded-lg border border-gray-200"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removeImage(index)}
-                                  className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                  disabled={loading || uploading || submitLoading}
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <input
-                      id={field.name}
-                      name={field.name}
-                      type={field.type}
-                      value={formData[field.name] || ""}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#0174BE] focus:border-transparent"
-                      placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                      disabled={loading || uploading || submitLoading}
-                      required={field.required}
-                      step={field.step}
-                    />
-                  )}
+    if (type === 'file' && key === 'images') {
+      return (
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-4"
+        >
+          <label className="block text-[#0C356A] font-medium mb-2 flex items-center">
+            <Camera size={18} className="mr-2" /> {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="file"
+            name={key}
+            multiple
+            accept="image/*"
+            onChange={handleChange}
+            className="w-full p-3 border border-[#0174BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0174BE] bg-white"
+          />
+          {formData.images?.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {formData.images.map((image, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={typeof image === 'string' ? image : URL.createObjectURL(image)}
+                    alt={`Product ${index}`}
+                    className="w-24 h-24 object-cover rounded"
+                  />
                 </div>
               ))}
             </div>
+          )}
+        </motion.div>
+      );
+    }
 
-            <div className="flex justify-end space-x-4 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="px-6 py-2 border border-[#0C356A] rounded-lg text-[#0C356A] font-medium hover:bg-[#0C356A] hover:text-[#FFF0CE] transition-colors"
-                disabled={loading || uploading || submitLoading}
-              >
-                Cancel
-              </button>
-              <motion.button
-                type="submit"
-                disabled={loading || uploading || submitLoading}
-                className="px-6 py-2 bg-[#0C356A] text-[#FFF0CE] font-medium rounded-lg hover:bg-[#0174BE] transition-colors"
-                whileHover={{ scale: loading || uploading || submitLoading ? 1 : 1.05 }}
-                whileTap={{ scale: loading || uploading || submitLoading ? 1 : 0.95 }}
-              >
-                {submitLoading ? "Updating..." : "Update"}
-              </motion.button>
-            </div>
-          </form>
-        </div>
+    if (type === 'file') {
+      return (
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-4"
+        >
+          <label className="block text-[#0C356A] font-medium mb-2 flex items-center">
+            <Camera size={18} className="mr-2" /> {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="file"
+            name={key}
+            accept="image/*"
+            onChange={handleChange}
+            className="w-full p-3 border border-[#0174BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0174BE] bg-white"
+          />
+          {formData[key] && (
+            <img
+              src={typeof formData[key] === 'string' ? formData[key] : URL.createObjectURL(formData[key])}
+              alt={label}
+              className="mt-2 w-24 h-24 object-cover rounded"
+            />
+          )}
+        </motion.div>
+      );
+    }
+
+    return (
+      <motion.div
+        key={key}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mb-4"
+      >
+        <label className="block text-[#0C356A] font-medium mb-2 flex items-center">
+          {key === 'email' && <Mail size={18} className="mr-2" />}
+          {key === 'phoneNumber' && <Phone size={18} className="mr-2" />}
+          {key === 'points' && <Award size={18} className="mr-2" />}
+          {['firstName', 'lastName', 'username'].includes(key) && <User size={18} className="mr-2" />}
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <input
+          type={type}
+          name={key}
+          value={formData[key] || ''}
+          onChange={handleChange}
+          className="w-full p-3 border border-[#0174BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0174BE] bg-white"
+          disabled={userRole === 'Manager' && ['email', 'phoneNumber', 'points'].includes(key)}
+          required={required}
+        />
+      </motion.div>
+    );
+  };
+
+  const renderAddressFields = (address, prefix, label, index = null) => (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.4 + (index || 0) * 0.1 }}
+      className="mb-4"
+    >
+      <div className="flex justify-between items-center mb-2">
+        <label className="block text-[#0C356A] font-medium flex items-center">
+          <MapPin size={18} className="mr-2" /> {label}
+        </label>
+        {index !== null && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            type="button"
+            onClick={() => removeAdditionalAddress(index)}
+            className="text-red-500 hover:text-red-700"
+          >
+            <Trash2 size={18} />
+          </motion.button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {['street', 'city', 'state', 'postalCode', 'country'].map((field) => (
+          <div key={`${prefix}.${field}`} className="mb-2">
+            <input
+              type="text"
+              name={`${prefix}.${field}`}
+              value={address[field] || ''}
+              onChange={handleChange}
+              placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+              className="w-full p-3 border border-[#0174BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0174BE] bg-white"
+              disabled={userRole === 'Manager' && prefix === 'permanentAddress'}
+              required
+            />
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+
+  const fields = {
+    users: [
+      { key: 'firstName', label: 'First Name', required: true },
+      { key: 'lastName', label: 'Last Name', required: true },
+      { key: 'username', label: 'Username', required: true },
+      ...(userRole === 'Admin' ? [
+        { key: 'email', label: 'Email', required: true },
+        { key: 'phoneNumber', label: 'Phone Number' },
+        { key: 'points', label: 'Points', type: 'number' },
+        { key: 'roles', label: 'Role', type: 'select', options: [
+          { _id: 'Admin', name: 'Admin' },
+          { _id: 'Manager', name: 'Manager' },
+          { _id: 'Seller', name: 'Seller' },
+          { _id: 'User', name: 'User' },
+        ]},
+        { key: 'profilePicture', label: 'Profile Picture', type: 'file' },
+      ] : []),
+    ],
+    categories: [
+      { key: 'name', label: 'Name', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ],
+    products: [
+      { key: 'title', label: 'Title', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'price', label: 'Price', type: 'number', required: true },
+      { key: 'productQuantity', label: 'Quantity', type: 'number', required: true },
+      { key: 'category', label: 'Category', type: 'select', options: categories },
+      { key: 'images', label: 'Images', type: 'file' },
+    ],
+    banners: [
+      { key: 'image', label: 'Image', type: 'file', required: true },
+      { key: 'link', label: 'Link' },
+    ],
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FFF0CE] p-6">
+      <Toaster position="top-right" toastOptions={{ style: { background: '#0C356A', color: '#FFF0CE', border: '1px solid #0174BE' } }} />
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative bg-white rounded-xl shadow-lg max-w-4xl mx-auto p-8"
+      >
+        <div className="absolute inset-0 border-4 border-transparent rounded-xl bg-gradient-to-r from-[#0174BE] to-[#0C356A] opacity-20 pointer-events-none"></div>
+
+        <h2 className="text-3xl font-bold text-[#0C356A] mb-6 text-center">
+          Edit {type.slice(0, -1)}
+        </h2>
+
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded flex items-center"
+            >
+              <AlertCircle size={20} className="mr-2" />
+              {error}
+            </motion.div>
+          )}
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded flex items-center"
+            >
+              <CheckCircle size={20} className="mr-2" />
+              {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fields[type]?.map((field) => (
+              <React.Fragment key={field.key}>
+                {renderInput(field.key, field.label, field.type, field.options, field.required)}
+              </React.Fragment>
+            ))}
+            {type === 'users' && userRole === 'Admin' && (
+              <>
+                {renderAddressFields(formData.permanentAddress || {}, 'permanentAddress', 'Permanent Address')}
+                {formData.additionalAddresses?.map((addr, index) => (
+                  <React.Fragment key={index}>
+                    {renderAddressFields(addr, `additionalAddresses.${index}`, `Additional Address ${index + 1}`, index)}
+                  </React.Fragment>
+                ))}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + formData.additionalAddresses.length * 0.1 }}
+                  className="mb-4 col-span-1 sm:col-span-2"
+                >
+                  <motion.button
+                    type="button"
+                    onClick={addAdditionalAddress}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center text-[#0174BE] hover:text-[#0C356A]"
+                  >
+                    <Plus size={18} className="mr-2" /> Add Another Address
+                  </motion.button>
+                </motion.div>
+              </>
+            )}
+          </div>
+          <div className="flex justify-end space-x-4 mt-6">
+            <motion.button
+              type="button"
+              onClick={() => navigate(config.editPath.split('/edit')[0])}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 bg-[#0174BE] text-[#FFF0CE] rounded-lg font-semibold hover:bg-[#0C356A] transition-colors"
+              disabled={userRole === 'Manager' && type === 'users' && ['Admin', 'Manager'].includes(targetUserRole)}
+            >
+              Save Changes
+            </motion.button>
+          </div>
+        </form>
       </motion.div>
     </div>
   );

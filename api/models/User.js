@@ -22,20 +22,25 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    unique: false,
   },
   email: {
     type: String,
     required: true,
     unique: true,
     trim: true,
-    lowercase: true
+    lowercase: true,
   },
   phoneNumber: {
     type: String,
+    required: true,
     unique: true,
     trim: true,
-    default: ''
+    validate: {
+      validator: (v) => /^\+?\d{10,15}$/.test(v),
+      message: 'Invalid phone number'
+    }
   },
   password: {
     type: String,
@@ -75,6 +80,7 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
 
 const User = mongoose.model('User', userSchema);
 

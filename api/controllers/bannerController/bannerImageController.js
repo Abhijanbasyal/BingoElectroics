@@ -5,15 +5,15 @@ dotenv.config();
 
 export const uploadBannerImage = async (req, res) => {
   try {
-    const { image } = req.body; // Expecting an array of image URLs from Cloudinary
+    const { image, link } = req.body; // Expecting an array of image URLs and optional link
     if (!image || !Array.isArray(image) || image.length === 0) {
       return res.status(400).json({ message: 'At least one image URL is required' });
     }
 
-    const newBanner = new BannerImage({ image });
+    const newBanner = new BannerImage({ image, link });
     await newBanner.save();
 
-    res.status(201).json({ message: 'Banner image uploaded', imageUrl: image });
+    res.status(201).json({ message: 'Banner image uploaded', imageUrl: image, link });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -21,7 +21,7 @@ export const uploadBannerImage = async (req, res) => {
 
 export const getBannerImages = async (req, res) => {
   try {
-    const banners = await BannerImage.find({ isDeleted: false }).select('image createdAt updatedAt');
+    const banners = await BannerImage.find({ isDeleted: false }).select('image link createdAt updatedAt');
     res.status(200).json({ banners });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -30,7 +30,7 @@ export const getBannerImages = async (req, res) => {
 
 export const getDeletedBannerImages = async (req, res) => {
   try {
-    const banners = await BannerImage.find({ isDeleted: true }).select('image createdAt updatedAt');
+    const banners = await BannerImage.find({ isDeleted: true }).select('image link createdAt updatedAt');
     res.status(200).json({ banners });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -44,7 +44,7 @@ export const deleteBannerImage = async (req, res) => {
       id,
       { isDeleted: true, deletedDate: new Date() },
       { new: true }
-    ).select('image createdAt updatedAt');
+    ).select('image link createdAt updatedAt');
 
     if (!banner) {
       return res.status(404).json({ message: 'Banner not found' });
@@ -85,7 +85,7 @@ export const restoreBannerImage = async (req, res) => {
       id,
       { isDeleted: false, deletedDate: null },
       { new: true }
-    ).select('image createdAt updatedAt');
+    ).select('image link createdAt updatedAt');
 
     if (!banner) {
       return res.status(404).json({ message: 'Banner not found' });

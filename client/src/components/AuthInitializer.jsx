@@ -1,20 +1,42 @@
-import { useEffect } from 'react';
-  import { useDispatch } from 'react-redux';
-  import { fetchCurrentUser } from '../redux/authSlice';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchCurrentUser } from '../redux/authSlice';
+import Loading from './LoadingComponent';
 
-  const AuthInitializer = () => {
-    const dispatch = useDispatch();
+const AuthInitializer = ({ children }) => {
+  const dispatch = useDispatch();
+  const { loading, isAuthenticated, user } = useSelector((state) => state.auth);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const token = localStorage.getItem('token');
 
-    useEffect(() => {
-      console.log('Dispatching fetchCurrentUser');
-      dispatch(fetchCurrentUser()).then((result) => {
-        console.log('fetchCurrentUser result:', result);
-      }).catch((error) => {
-        console.error('fetchCurrentUser error:', error);
-      });
-    }, [dispatch]);
+  useEffect(() => {
+    if (token && !isAuthenticated) {
+    
+      dispatch(fetchCurrentUser())
+        .then((result) => {
+          
+          setIsAuthReady(true);
+        })
+        .catch((error) => {
+         
+          if (error.payload?.message.includes('Unauthorized') || error.payload?.message.includes('No token found')) {
+            localStorage.removeItem('token');
+          }
+          setIsAuthReady(true);
+        });
+    } else {
+      
+      setIsAuthReady(true);
+    }
+  }, [dispatch, isAuthenticated, token]); // Removed 'loading' to prevent re-runs
 
-    return null; // no UI
-  };
+  if (!isAuthReady) {
+    
+    return <Loading />;
+  }
 
-  export default AuthInitializer;
+  
+  return <>{children}</>;
+};
+
+export default AuthInitializer;

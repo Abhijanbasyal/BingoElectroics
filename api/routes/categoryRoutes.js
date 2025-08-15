@@ -17,9 +17,9 @@ const router = express.Router();
 
 // Protected routes (Manager/Admin only)
 router.post("/", verifyToken, createCategory); //verifyRole(['Manager', 'Admin'])  --back-end logic for handling roles 
-router.get("/", verifyToken, getAllCategories); 
+router.get("/", getAllCategories); 
 router.get("/deleted", verifyToken, getDeletedCategories); 
-router.get("/:id", verifyToken, getCategoryById); 
+router.get('/:id', verifyToken, verifyRole(['Admin', 'Manager']), getCategoryById); 
 router.put("/:id", verifyToken, updateCategory); 
 router.delete("/:id", verifyToken, deleteCategory); 
 router.delete("/:id/permanent", verifyToken, deleteCategoryPermanently); 

@@ -20,21 +20,36 @@ const pagelimitForData = process.env.DATA_FETCH_PAGE_LIMIT || 10;
 // Register a new user
 export const register = async (req, res, next) => {
   try {
-    if (!req.body || !req.body.username || !req.body.password || !req.body.email || !req.body.firstName || !req.body.lastName || !req.body.permanentAddress) {
+    console.log('Signup request body:', req.body);
+    if (
+      !req.body ||
+      !req.body.username ||
+      !req.body.password ||
+      !req.body.email ||
+      !req.body.firstName ||
+      !req.body.lastName ||
+      !req.body.phoneNumber ||
+      !req.body.permanentAddress
+    ) {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
     const { firstName, lastName, username, email, phoneNumber, password, roles, profilePicture, permanentAddress, additionalAddresses } = req.body;
 
-    // Validate input
-    try {
-      validateRegistration({ username, email, password });
-    } catch (validationError) {
-      return next(errorHandler(400, validationError.message));
+    // For protected /register route, check Manager restrictions
+    if (req.user && req.user.roles === "Manager" && ["Admin", "Manager"].includes(roles)) {
+      return next(errorHandler(403, "Managers cannot create users with Admin or Manager roles"));
     }
 
-    // Check password strength
+    try {
+      validateRegistration({ username, email, password, phoneNumber });
+    } catch (validationError) {
+      console.error('Validation error:', validationError);
+      return next(validationError);
+    }
+
     const passwordCheck = validatePasswordStrength(password);
     if (!passwordCheck.isValid) {
+      console.error('Password validation failed:', passwordCheck.requirements);
       return next(
         errorHandler(400, "Password does not meet requirements", {
           requirements: passwordCheck.requirements,
@@ -42,17 +57,14 @@ export const register = async (req, res, next) => {
       );
     }
 
-    // Check if email or phoneNumber exists
-    const existingQuery = { $or: [{ email }] };
-    if (phoneNumber) {
-      existingQuery.$or.push({ phoneNumber });
-    }
+    // Check email and phoneNumber for uniqueness
+    const existingQuery = { $or: [{ email }, { phoneNumber }], isDeleted: false };
     const existingUser = await User.findOne(existingQuery);
     if (existingUser) {
+      console.log('Existing user found:', existingUser.email);
       return next(errorHandler(400, "Email or phone number already exists"));
     }
 
-    // Create new user
     const newUser = new User({
       firstName,
       lastName,
@@ -63,24 +75,61 @@ export const register = async (req, res, next) => {
       roles: roles || "Customer",
       profilePicture: profilePicture || '',
       permanentAddress,
-      additionalAddresses: additionalAddresses || []
+      additionalAddresses: additionalAddresses || [],
     });
 
+    console.log('Attempting to save new user:', newUser);
     await newUser.save();
+    console.log('User saved successfully:', newUser._id);
 
     const { password: _, ...userWithoutPassword } = newUser.toObject();
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user: userWithoutPassword,
-    });
+    // Skip token and cookie for Admin/Manager (req.user exists)
+    if (req.user) {
+      return res.status(201).json({
+        success: true,
+        message: "User created successfully",
+        user: userWithoutPassword,
+      });
+    }
+
+    // Generate token and set cookie for public signup
+    const token = jwt.sign(
+      { id: newUser._id, roles: newUser.roles },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res
+      .cookie("access_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      })
+      .status(201)
+      .json({
+        success: true,
+        message: "User registered successfully",
+        user: userWithoutPassword,
+        token,
+      });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      keyValue: error.keyValue,
+    });
     if (error.name === 'ValidationError') {
       return next(errorHandler(400, error.message));
     }
-    return next(errorHandler(500, 'Internal server error during registration'));
+    if (error.code === 11000) {
+      const field = error.keyValue ? Object.keys(error.keyValue)[0] : 'unknown';
+      console.error(`Duplicate key error on field: ${field}`, error.keyValue);
+      return next(errorHandler(400, `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`));
+    }
+    return next(errorHandler(500, 'Internal server error during registration', { details: error.message }));
   }
 };
 
@@ -88,17 +137,25 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { identifier, password } = req.body;
+    console.log('Login attempt:', { identifier });
+
+    if (!identifier || !password) {
+      console.log('Missing identifier or password:', { identifier, password });
+      return next(errorHandler(400, "Email/phone number and password are required"));
+    }
 
     const user = await User.findOne({ 
       $or: [{ email: identifier }, { phoneNumber: identifier }],
       isDeleted: false 
     });
     if (!user) {
+      console.log('User not found for identifier:', identifier);
       return next(errorHandler(404, "User not found"));
     }
 
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
+      console.log('Password mismatch for user:', identifier);
       return next(errorHandler(400, "Invalid credentials"));
     }
 
@@ -121,83 +178,32 @@ export const login = async (req, res, next) => {
         success: true,
         message: "Login successful",
         user: userWithoutPassword,
+        token,
       });
   } catch (error) {
-    console.error('Login error:', error);
-    next(error);
+    console.error('Login error:', {
+      message: error.message,
+      stack: error.stack,
+    });
+    next(errorHandler(500, 'Internal server error during login'));
   }
 };
 
 // Edit current user's profile
 export const editProfile = async (req, res, next) => {
   try {
-    const { firstName, lastName, username, profilePicture, permanentAddress, additionalAddresses } = req.body;
-    const userId = req.user.id; // Get user ID from JWT
+    const { firstName, lastName, username, profilePicture, permanentAddress, additionalAddresses, password } = req.body;
+    const userId = req.user.id;
 
-    // Only allow non-admin fields
+    console.log('Edit profile request body:', req.body);
+
     const updateData = { firstName, lastName, username, profilePicture, permanentAddress, additionalAddresses };
-
-    // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    // Validate input
-    try {
-      validateUserUpdate(updateData, false); // false indicates non-admin
-    } catch (validationError) {
-      return next(errorHandler(400, validationError.message));
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select("-password");
-
-    if (!updatedUser) {
-      return next(errorHandler(404, "User not found"));
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      user: updatedUser,
-    });
-  } catch (error) {
-    console.error('Edit profile error:', error);
-    if (error.name === 'ValidationError') {
-      return next(errorHandler(400, error.message));
-    }
-    next(error);
-  }
-};
-
-// Update user (Admin only)
-export const updateUser = async (req, res, next) => {
-  try {
-    const { firstName, lastName, username, email, phoneNumber, roles, points, password, profilePicture, permanentAddress, additionalAddresses } = req.body;
-    const isAdmin = req.user.roles === "Admin";
-    const userId = req.params.id;
-
-    // Restrict non-admin users to updating only allowed fields
-    const allowedFields = { firstName, lastName, username, profilePicture, permanentAddress, additionalAddresses };
-    const updateData = isAdmin
-      ? { firstName, lastName, username, email, phoneNumber, roles, points, profilePicture, permanentAddress, additionalAddresses }
-      : allowedFields;
-
-    // Remove undefined fields
-    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
-
-    // Validate input
-    try {
-      validateUserUpdate(updateData, isAdmin);
-    } catch (validationError) {
-      return next(errorHandler(400, validationError.message));
-    }
-
-    // Handle password update (for all users)
     if (password) {
       const passwordCheck = validatePasswordStrength(password);
       if (!passwordCheck.isValid) {
+        console.error('Password validation failed:', passwordCheck.requirements);
         return next(
           errorHandler(400, "Password does not meet requirements", {
             requirements: passwordCheck.requirements,
@@ -207,14 +213,19 @@ export const updateUser = async (req, res, next) => {
       updateData.password = await hashPassword(password);
     }
 
-    // Update pointsRank if points are updated (admin only)
-    if (isAdmin && points !== undefined) {
-      updateData.pointsRank = getPointsRank(points);
+    delete updateData.email;
+    delete updateData.phoneNumber;
+
+    try {
+      validateUserUpdate(updateData, false);
+    } catch (validationError) {
+      console.error('Validation error:', validationError);
+      return next(errorHandler(400, validationError.message));
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: updateData },
+      { $set: { ...updateData, updatedAt: new Date() } },
       { new: true, runValidators: true }
     ).select("-password");
 
@@ -222,17 +233,215 @@ export const updateUser = async (req, res, next) => {
       return next(errorHandler(404, "User not found"));
     }
 
+    console.log('Profile updated successfully:', updatedUser._id);
     res.status(200).json({
       success: true,
-      message: "User updated successfully",
+      message: "Profile updated successfully",
       user: updatedUser,
     });
   } catch (error) {
-    console.error('Update user error:', error);
+    console.error('Edit profile error:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      keyValue: error.keyValue,
+    });
     if (error.name === 'ValidationError') {
       return next(errorHandler(400, error.message));
     }
-    next(error);
+    if (error.code === 11000) {
+      const field = error.keyValue ? Object.keys(error.keyValue)[0] : 'unknown';
+      console.error(`Duplicate key error on field: ${field}`, error.keyValue);
+      return next(errorHandler(400, `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`));
+    }
+    next(errorHandler(500, 'Internal server error during profile update'));
+  }
+};
+
+// Update user
+export const updateUser = async (req, res, next) => {
+  try {
+    const { firstName, lastName, username, email, phoneNumber, roles, points, password, profilePicture, permanentAddress, additionalAddresses } = req.body;
+    const isAdmin = req.user.roles === 'Admin';
+    const isManager = req.user.roles === 'Manager';
+    const userId = req.params.id;
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return next(errorHandler(404, 'User not found'));
+    }
+    if (isManager && ['Admin', 'Manager'].includes(targetUser.roles)) {
+      return next(errorHandler(403, 'Managers cannot edit Admin or Manager profiles'));
+    }
+    if (isManager && roles && ['Admin', 'Manager'].includes(roles)) {
+      return next(errorHandler(403, 'Managers cannot assign Admin or Manager roles'));
+    }
+
+    const allowedFields = isAdmin
+      ? { firstName, lastName, username, email, phoneNumber, roles, points, password, profilePicture, permanentAddress, additionalAddresses }
+      : { firstName, lastName, username, profilePicture, permanentAddress, additionalAddresses };
+
+    const updateData = {};
+    Object.keys(allowedFields).forEach((key) => {
+      if (allowedFields[key] !== undefined && allowedFields[key] !== null) {
+        updateData[key] = allowedFields[key];
+      }
+    });
+
+    try {
+      validateUserUpdate(updateData, isAdmin);
+    } catch (validationError) {
+      console.error('Validation error:', validationError);
+      return next(errorHandler(400, validationError.message));
+    }
+
+    if (isAdmin && (email || phoneNumber)) {
+      const existingQuery = { $or: [], _id: { $ne: userId }, isDeleted: false };
+      if (email && email !== targetUser.email) {
+        existingQuery.$or.push({ email });
+      }
+      if (phoneNumber && phoneNumber !== targetUser.phoneNumber) {
+        existingQuery.$or.push({ phoneNumber });
+      }
+      if (existingQuery.$or.length) {
+        const existingUser = await User.findOne(existingQuery);
+        if (existingUser) {
+          return next(errorHandler(400, 'Email or phone number already exists'));
+        }
+      }
+    }
+
+    if (password && isAdmin) {
+      const passwordCheck = validatePasswordStrength(password);
+      if (!passwordCheck.isValid) {
+        return next(errorHandler(400, 'Password does not meet requirements', { requirements: passwordCheck.requirements }));
+      }
+      updateData.password = await hashPassword(password);
+    }
+
+    if (isAdmin && points !== undefined) {
+      updateData.pointsRank = getPointsRank(points);
+    }
+
+    // Handle nested objects
+    if (updateData.permanentAddress) {
+      updateData.permanentAddress = {
+        street: updateData.permanentAddress.street || '',
+        city: updateData.permanentAddress.city || '',
+        state: updateData.permanentAddress.state || '',
+        postalCode: updateData.permanentAddress.postalCode || '',
+        country: updateData.permanentAddress.country || '',
+      };
+    }
+    if (updateData.additionalAddresses) {
+      updateData.additionalAddresses = Array.isArray(updateData.additionalAddresses)
+        ? updateData.additionalAddresses.map(addr => ({
+            street: addr.street || '',
+            city: addr.city || '',
+            state: addr.state || '',
+            postalCode: addr.postalCode || '',
+            country: addr.country || '',
+          }))
+        : [];
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { ...updateData, updatedAt: new Date() } },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return next(errorHandler(404, 'User not found'));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Update user error:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      keyValue: error.keyValue,
+    });
+    if (error.name === 'ValidationError') {
+      return next(errorHandler(400, error.message));
+    }
+    if (error.code === 11000) {
+      const field = error.keyValue ? Object.keys(error.keyValue)[0] : 'unknown';
+      return next(errorHandler(400, `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`));
+    }
+    next(errorHandler(500, 'Internal server error'));
+  }
+};
+
+// Check unique fields
+export const checkUniqueFields = async (req, res, next) => {
+  try {
+    console.log('checkUniqueFields called with:', req.body);
+
+    if (!req.user || !req.user.roles) {
+      console.error('checkUniqueFields: Missing req.user or req.user.roles');
+      return next(errorHandler(401, 'Unauthorized: User not authenticated'));
+    }
+
+    const { email, phoneNumber, excludeId } = req.body;
+    const isManager = req.user.roles === "Manager";
+
+    if (!email && !phoneNumber) {
+      console.log('checkUniqueFields: No fields to check');
+      return res.status(200).json({ success: true, isUnique: true });
+    }
+
+    if (excludeId && isManager) {
+      const targetUser = await User.findById(excludeId);
+      if (!targetUser) {
+        console.log('checkUniqueFields: Target user not found for excludeId:', excludeId);
+        return next(errorHandler(404, 'Target user not found'));
+      }
+      if (targetUser && ['Admin', 'Manager'].includes(targetUser.roles)) {
+        console.log('checkUniqueFields: Manager attempted to modify Admin/Manager user:', excludeId);
+        return next(errorHandler(403, 'Managers cannot modify Admin or Manager profiles'));
+      }
+    }
+
+    const query = { $or: [], isDeleted: false };
+    const currentUser = excludeId ? await User.findById(excludeId) : null;
+
+    if (email && (!currentUser || email !== currentUser.email)) {
+      query.$or.push({ email });
+    }
+    if (phoneNumber && (!currentUser || phoneNumber !== currentUser.phoneNumber)) {
+      query.$or.push({ phoneNumber });
+    }
+
+    if (!query.$or.length) {
+      console.log('checkUniqueFields: No fields to check, returning isUnique: true');
+      return res.status(200).json({ success: true, isUnique: true });
+    }
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    console.log('checkUniqueFields: Querying with:', query);
+    const existingUser = await User.findOne(query);
+    if (existingUser) {
+      console.log('checkUniqueFields: Found existing user:', existingUser._id, existingUser.email);
+      return res.status(400).json({
+        success: false,
+        message: 'Email or phone number already exists',
+        isUnique: false
+      });
+    }
+
+    console.log('checkUniqueFields: No conflicting user found');
+    res.status(200).json({ success: true, isUnique: true });
+  } catch (error) {
+    console.error('checkUniqueFields error:', error.message, error.stack);
+    next(errorHandler(500, 'Internal server error during uniqueness check'));
   }
 };
 
@@ -447,10 +656,13 @@ export const restoreAllUsers = async (req, res, next) => {
 
 // Get current user
 export const getCurrentUser = async (req, res, next) => {
+  console.log('getCurrentUser called for user:', req.user);
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return next(errorHandler(404, "User not found"));
-
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      console.log('User not found for ID:', req.user.id);
+      return next(errorHandler(404, 'User not found'));
+    }
     res.status(200).json({
       success: true,
       user,

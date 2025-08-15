@@ -13,28 +13,34 @@ import {
   getDeletedUsers,
   deleteAllUsersPermanently,
   restoreAllUsers,
-  getCurrentUser
+  getCurrentUser,
+  checkUniqueFields
 } from '../controllers/authController.js';
 import { verifyToken, verifyRole } from '../utils/verifyToken.js';
 
 const router = express.Router();
 
+console.log('Registering auth routes');
+
 // Public routes
-router.post('/register', register);
-router.post('/login', login);
+router.post('/signup', register); // Updated to /api/auth/signup
+router.post('/register/check-unique', verifyToken, verifyRole(['Admin', 'Manager']), checkUniqueFields);
+router.post('/login', login); // Updated to /api/auth/login
 
 // Protected routes
-router.get('/current-user', verifyToken, getCurrentUser);
-router.post('/logout', verifyToken, logout);
-router.get('/users', verifyToken, getAllUsers);
-router.get('/users/deleted', verifyToken, verifyRole('Admin'), getDeletedUsers);
-router.get('/users/:id', verifyToken, getUserById);
-router.put('/users/:id', verifyToken, updateUser);
-router.delete('/users/:id', verifyToken, verifyRole('Admin'), deleteUser);
-router.delete('/users/:id/permanent', verifyToken, verifyRole('Admin'), deleteUserPermanently);
-router.put('/users/:id/restore', verifyToken, verifyRole('Admin'), restoreUser);
-router.delete('/users/delete/all', verifyToken, verifyRole('Admin'), deleteAllUsersPermanently);
-router.put('/users/restore/all', verifyToken, verifyRole('Admin'), restoreAllUsers);
-router.put('/edit-profile', verifyToken, editProfile);
+router.post('/register', verifyToken, verifyRole(['Admin', 'Manager']), register); // Updated to /api/auth/register
+router.get('/current-user', verifyToken, getCurrentUser); // Updated
+router.post('/logout', verifyToken, logout); // Updated
+router.get('/users', verifyToken, verifyRole(['Admin', 'Manager']), getAllUsers); // Updated
+router.get('/users/deleted', verifyToken, verifyRole(['Admin', 'Manager']), getDeletedUsers); // Updated
+router.get('/users/:id', verifyToken, verifyRole(['Admin', 'Manager']), getUserById); // Updated
+router.put('/users/:id', verifyToken, verifyRole(['Admin', 'Manager']), updateUser); // Updated
+router.post('/users/:id/check-unique', verifyToken, verifyRole(['Admin', 'Manager']), checkUniqueFields); // Updated
+router.delete('/users/:id', verifyToken, verifyRole(['Admin', 'Manager']), deleteUser); // Updated
+router.delete('/users/:id/permanent', verifyToken, verifyRole(['Admin', 'Manager']), deleteUserPermanently); // Updated
+router.put('/users/:id/restore', verifyToken, verifyRole(['Admin', 'Manager']), restoreUser); // Updated
+router.delete('/users/delete/all', verifyToken, verifyRole('Admin'), deleteAllUsersPermanently); // Updated
+router.put('/users/restore/all', verifyToken, verifyRole('Admin'), restoreAllUsers); // Updated
+router.put('/edit-profile', verifyToken, editProfile); // Updated
 
 export default router;

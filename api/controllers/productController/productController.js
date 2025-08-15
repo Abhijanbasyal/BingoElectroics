@@ -6,14 +6,15 @@ dotenv.config();
 
 const pagelimitForData = process.env.DATA_FETCH_PAGE_LIMIT || 10;
 
+// Calculate loyalty points based on price (price / 100)
+const calculateLoyaltyPoints = (price) => {
+    return Math.floor(price / 100);
+};
+
 // Create a new product (Seller/Manager/Admin)
 export const createProduct = async (req, res, next) => {
     try {
-        // if (!['Seller', 'Manager', 'Admin'].includes(req.user.roles)) {
-        //     return next(errorHandler(403, "Only Seller, Manager, or Admin can create products"));
-        // }
-
-        const { title, description, images, price, loyaltyPoints, productQuantity, category } = req.body;
+        const { title, description, images, price, productQuantity, category } = req.body;
 
         if (!title || !price || !productQuantity || !category) {
             return next(errorHandler(400, "Title, price, product quantity, and category are required"));
@@ -22,9 +23,8 @@ export const createProduct = async (req, res, next) => {
         const newProduct = new Product({
             title,
             description,
-            images: images || [], // Expecting an array of image URLs
+            images: images || [],
             price,
-            loyaltyPoints,
             productQuantity,
             category,
             createdBy: req.user.id,
@@ -52,14 +52,13 @@ export const updateProduct = async (req, res, next) => {
             return next(errorHandler(403, "Only Seller, Manager, or Admin can update products"));
         }
 
-        const { title, description, images, price, loyaltyPoints, productQuantity, category } = req.body;
+        const { title, description, images, price, productQuantity, category } = req.body;
 
         const updateData = {
             title,
             description,
-            images: images || [], // Update with new array of image URLs
+            images: images || [],
             price,
-            loyaltyPoints,
             productQuantity,
             category,
             modifiedBy: req.user.id,
@@ -91,7 +90,6 @@ export const updateProduct = async (req, res, next) => {
 // Get all products with pagination
 export const getAllProducts = async (req, res, next) => {
     try {
-
         const page = parseInt(req.query.page) || 1;
         const limit = pagelimitForData;
         const skip = (page - 1) * limit;
@@ -120,7 +118,6 @@ export const getAllProducts = async (req, res, next) => {
 // Get product by ID
 export const getProductById = async (req, res, next) => {
     try {
-
         const product = await Product.findOne({ _id: req.params.id, isDeleted: false })
             .populate('category', 'title')
             .populate('createdBy', 'username')
@@ -307,48 +304,58 @@ export const getDeletedProducts = async (req, res, next) => {
     }
 };
 
+// Increment product view
 export const incrementProductView = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const userId = req.user.id; // From verifyToken
+    try {
+        const { productId } = req.params;
+        const userId = req.user.id;
 
-    const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+        const product = await Product.findById(productId);
+        if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Check if user has already viewed this product
-    if (!product.viewedBy.includes(userId)) {
-      product.views += 1;
-      product.viewedBy.push(userId);
-      await product.save();
+        if (!product.viewedBy.includes(userId)) {
+            product.views += 1;
+            product.viewedBy.push(userId);
+            await product.save();
+        }
+
+        res.status(200).json({ views: product.views });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    res.status(200).json({ views: product.views });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
+// Get featured products
 export const getFeaturedProducts = async (req, res) => {
-  try {
-    // Alternative: Fetch top 5 products by views
-    const featuredProducts = await Product.find()
-      .sort({ views: -1 }) // Sort by views in descending order
-      .limit(5)
-      .select('_id title price images category description points views bought');
-    res.status(200).json(featuredProducts);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    try {
+        const featuredProducts = await Product.find()
+            .sort({ views: -1 })
+            .limit(5)
+            .select('_id title price images category description views bought');
+        res.status(200).json(featuredProducts);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
-export const updateProductBought = async (productId) => {
-  try {
-    const product = await Product.findById(productId);
-    if (product) {
-      product.bought += 1;
-      await product.save();
+// Update product bought count and calculate loyalty points
+export const updateProductBought = async (productId, userId) => {
+    try {
+        const product = await Product.findById(productId);
+        if (product) {
+            product.bought += 1;
+            await product.save();
+
+            // Calculate loyalty points (price / 100)
+            const loyaltyPoints = calculateLoyaltyPoints(product.price);
+
+            // Update user's loyalty points (assuming User model has a points field)
+            const User = mongoose.model('User');
+            await User.findByIdAndUpdate(userId, {
+                $inc: { points: loyaltyPoints }
+            });
+        }
+    } catch (error) {
+        console.error('Error updating bought count or loyalty points:', error);
     }
-  } catch (error) {
-    console.error('Error updating bought count:', error);
-  }
 };

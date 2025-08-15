@@ -75,64 +75,69 @@ export const getAllCategories = async (req, res, next) => {
 };
 
 // Get category by ID
-export const getCategoryById = async (req, res, next) => {
-    try {
-        if (!['Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Manager or Admin can view categories"));
-        }
-
-        const category = await Category.findById(req.params.id)
-            .populate('createdBy', 'username')
-            .populate('modifiedBy', 'username');
-
-        if (!category || category.isDeleted) {
-            return next(errorHandler(404, "Category not found"));
-        }
-
-        res.status(200).json({
-            success: true,
-            category
-        });
-    } catch (error) {
-        next(error);
+export const getCategoryById = async (req, res) => {
+  try {
+    const category = await Category.findOne({ _id: req.params.id, isDeleted: false });
+    if (!category) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
     }
+    res.status(200).json({ success: true, category });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // Update category (Manager/Admin only)
 export const updateCategory = async (req, res, next) => {
-    try {
-        if (!['Manager', 'Admin'].includes(req.user.roles)) {
-            return next(errorHandler(403, "Only Manager or Admin can update categories"));
-        }
-
-        const { title, description } = req.body;
-
-        const updateData = {
-            title,
-            description,
-            modifiedBy: req.user.id,
-            modifiedDate: new Date()
-        };
-
-        const updatedCategory = await Category.findByIdAndUpdate(
-            req.params.id,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        ).populate('createdBy', 'username')
-         .populate('modifiedBy', 'username');
-
-        if (!updatedCategory || updatedCategory.isDeleted) {
-            return next(errorHandler(404, "Category not found"));
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Category updated successfully",
-            category: updatedCategory
-        });
-    } catch (error) {
-        next(error);
+  try {
+    if (!['Manager', 'Admin'].includes(req.user.roles)) {
+      return next(errorHandler(403, 'Only Manager or Admin can update categories'));
     }
+
+    const { title, description } = req.body;
+
+    if (!title?.trim()) {
+      return next(errorHandler(400, 'Category title is required'));
+    }
+
+    const updateData = {
+      title: title.trim(),
+      description: description?.trim() || '',
+      modifiedBy: req.user.id,
+      modifiedDate: new Date(),
+    };
+
+    const updatedCategory = await Category.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: false },
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate('createdBy', 'username').populate('modifiedBy', 'username');
+
+    if (!updatedCategory) {
+      return next(errorHandler(404, 'Category not found or is deleted'));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Category updated successfully',
+      category: updatedCategory,
+    });
+  } catch (error) {
+    console.error('Update category error:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      keyValue: error.keyValue,
+    });
+    if (error.name === 'ValidationError') {
+      return next(errorHandler(400, error.message));
+    }
+    if (error.code === 11000) {
+      const field = error.keyValue ? Object.keys(error.keyValue)[0] : 'unknown';
+      return next(errorHandler(400, `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`));
+    }
+    next(errorHandler(500, 'Internal server error'));
+  }
 };
 
 // Soft delete category (Manager/Admin only)

@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { errorHandler } from './utils/error.js';
@@ -18,14 +17,17 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    credentials: true
+    origin: process.env.CLIENT_URL || 'http://localhost:8000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
+console.log('Auth routes mounted at /api/auth');
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart',cartRoutes)
@@ -48,7 +50,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Connect to database and then start server
 const startServer = async () => {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle, Image as ImageIcon, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import APIEndPoints from '../../middleware/APIEndPoints';
 
@@ -11,7 +11,6 @@ const AddProducts = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [loyaltyPoints, setLoyaltyPoints] = useState('');
   const [productQuantity, setProductQuantity] = useState('');
   const [category, setCategory] = useState('');
   const [images, setImages] = useState([]);
@@ -25,12 +24,9 @@ const AddProducts = () => {
 
   const addProductApi = APIEndPoints.Add_product;
   const getCategoryApi = APIEndPoints.Get_categories;
-  const cloudinaryPresets =  process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET
-  const cloudinaryName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME
+  const cloudinaryPresets = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
+  const cloudinaryName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
 
-  // console.log(addProductApi,getCategoryApi,cloudinaryPresets, cloudinaryName)
-
-  // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -45,7 +41,6 @@ const AddProducts = () => {
     fetchCategories();
   }, []);
 
-  // Handle image upload to Cloudinary
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length + images.length > 5) {
@@ -80,14 +75,12 @@ const AddProducts = () => {
     }
   };
 
-  // Remove image
   const handleRemoveImage = (index) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
     toast.success('Image removed');
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -110,7 +103,6 @@ const AddProducts = () => {
           description,
           images,
           price: parseFloat(price),
-          loyaltyPoints: parseInt(loyaltyPoints) || 0,
           productQuantity: parseInt(productQuantity),
           category,
         },
@@ -122,7 +114,6 @@ const AddProducts = () => {
       setTitle('');
       setDescription('');
       setPrice('');
-      setLoyaltyPoints('');
       setProductQuantity('');
       setCategory('');
       setImages([]);
@@ -246,7 +237,7 @@ const AddProducts = () => {
                     className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                     disabled={loading}
                   >
-                    Click
+                    <X size={12} />
                   </button>
                 </motion.div>
               ))}
@@ -267,22 +258,6 @@ const AddProducts = () => {
             placeholder="Enter price"
             min="0"
             step="0.01"
-            disabled={loading}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="loyaltyPoints" className="block text-sm font-medium text-fourth">
-            Loyalty Points (Optional)
-          </label>
-          <input
-            type="number"
-            id="loyaltyPoints"
-            value={loyaltyPoints}
-            onChange={(e) => setLoyaltyPoints(e.target.value)}
-            className="mt-1 w-full p-2 rounded-lg bg-white text-fourth border border-tertiary/30 focus:outline-none focus:ring-2 focus:ring-tertiary/50"
-            placeholder="Enter loyalty points"
-            min="0"
             disabled={loading}
           />
         </div>

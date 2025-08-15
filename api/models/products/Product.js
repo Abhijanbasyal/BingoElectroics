@@ -19,11 +19,6 @@ const productSchema = new mongoose.Schema({
         required: true,
         min: 0
     },
-    loyaltyPoints: {
-        type: Number,
-        default: 0,
-        min: 0
-    },
     productQuantity: {
         type: Number,
         required: true,

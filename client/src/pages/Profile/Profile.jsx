@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Award, Shield, MapPin, Camera } from 'lucide-react';
-import { fetchCurrentUser, clearError } from '../../redux/authSlice';
+import { User, Mail, Phone, Award, Shield, MapPin } from 'lucide-react';
+import { clearError } from '../../redux/authSlice';
 
 const Profile = () => {
   const { user, loading, error } = useSelector((state) => state.auth);
@@ -20,12 +20,8 @@ const Profile = () => {
     pointsRank: '',
     profilePicture: '',
     permanentAddress: { street: '', city: '', state: '', postalCode: '', country: '' },
-    additionalAddresses: []
+    additionalAddresses: [],
   });
-
-  useEffect(() => {
-    dispatch(fetchCurrentUser());
-  }, [dispatch]);
 
   useEffect(() => {
     if (user) {
@@ -40,7 +36,7 @@ const Profile = () => {
         pointsRank: user.pointsRank || '',
         profilePicture: user.profilePicture || '',
         permanentAddress: user.permanentAddress || { street: '', city: '', state: '', postalCode: '', country: '' },
-        additionalAddresses: user.additionalAddresses || []
+        additionalAddresses: user.additionalAddresses || [],
       });
     }
   }, [user]);
@@ -53,6 +49,18 @@ const Profile = () => {
   const formatAddress = (address) => {
     return `${address.street}, ${address.city}, ${address.state} ${address.postalCode}, ${address.country}`;
   };
+
+  if (!user && !loading) {
+    return (
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center text-red-500 font-medium"
+      >
+        Please log in to view your profile.
+      </motion.p>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -85,7 +93,7 @@ const Profile = () => {
             animate={{ opacity: 1 }}
             className="text-center text-fourth font-medium"
           >
-            Loading...
+            Loading profile...
           </motion.p>
         ) : (
           <div className="space-y-6">
